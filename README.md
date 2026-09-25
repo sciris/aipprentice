@@ -1,6 +1,6 @@
-# aipprentice
+# AIpprentice
 
-A Claude Code plugin for **apprentices**: named, persistent assistants that learn your preferences, conventions, and domain as you work together, the way a trainee employee would. Each apprentice keeps what it learns in a human-readable Markdown wiki in its own folder.
+A Claude Code plugin for **AI apprentices** ("aipprentices"): named, persistent assistants that learn your preferences, conventions, and domain as you work together, the way a trainee employee would. Each apprentice keeps what it learns in a human-readable Markdown wiki in its own folder.
 
 Apprentices are **opt-in per session**. Nothing loads, and nothing is recorded, unless you activate one.
 
@@ -71,6 +71,14 @@ Small changes are written directly; big ones are proposed first as a numbered li
 | New lessons on shared pages (`me/`, `preferences/`, `domain/`, `tools/`) | Proposed |
 | Editing or removing existing lessons, new folders, skills | Proposed |
 | Deleting absorbed auto-memory files; anything outside the apprentice folder | Proposed |
+
+## Private knowledge and sensitive data
+
+- **`private/`** in each apprentice folder holds knowledge worth keeping but not committing: notes about colleagues, confidential or unpublished work, personal matters. It's gitignored, uses the same wiki conventions, and has its own `private/Home.md` that loads on activation. Public pages never link into it. Because it's gitignored, it isn't backed up by git.
+- **Guard hook.** Every Write/Edit/Bash that targets an apprentice folder is scanned, whether or not an apprentice is active. Credentials (API keys, tokens, passwords, private keys, credentialed URLs, and similar) always trigger a confirmation prompt, even in `private/`. Personal data such as email addresses triggers one outside `private/`. Writes to `private/` also prompt if it isn't actually gitignored. To allow a false positive permanently, add the string to `<apprentice>/.scanignore`.
+- **Debrief rules.** Credentials are never extracted, only where they live. Sensitive lessons are always proposed and marked `⚠ sensitive`, never written directly. Each debrief ends with a scan (`aipprentice.py scan NAME`).
+- **Redaction.** Condensed transcripts used for backlog debriefs have credentials masked before any model sees them.
+- **Limits.** Pattern matching catches credentials and contact details, not confidential facts written in plain prose. That part relies on the rules in `WIKI.md` and on your review of `git diff` before committing.
 
 ## Housekeeping state
 

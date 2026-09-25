@@ -14,7 +14,7 @@ Requires an active apprentice (see step 0 of the `debrief` skill). If none is ac
 
 ## 1. Take inventory
 
-Read without editing: every wiki page, `skills/*/SKILL.md`, and the recent journal pages. Also read the auto-memory inbox for each project that has a project page (`$H inbox NAME`, run from that repo, or read `~/.claude/projects/<key>/memory/` directly), plus `~/.claude/CLAUDE.md` and `~/.claude/skills/`, so you don't duplicate what's already a firm rule or an installed skill. If the wiki is large, have subagents summarize sections in parallel.
+Read without editing: every wiki page (including `private/`), `skills/*/SKILL.md`, and the recent journal pages. Also read the auto-memory inbox for each project that has a project page (`$H inbox NAME`, run from that repo, or read `~/.claude/projects/<key>/memory/` directly), plus `~/.claude/CLAUDE.md` and `~/.claude/skills/`, so you don't duplicate what's already a firm rule or an installed skill. If the wiki is large, have subagents summarize sections in parallel.
 
 ## 2. (deep only) Mine unsaved lessons
 
@@ -30,6 +30,7 @@ Run `$H pending NAME` and process those sessions with `$H condense <id>`, fannin
 - **Structure**: pages missing from `Home.md`, a `Home.md` that has grown past ~60 lines, broken or missing `[[links]]`, and pages in the wrong folder under `WIKI.md`.
 - **Graduate to a skill**: skill candidates from the journal, and procedures that recur across pages or sessions. Draft `skills/<name>/SKILL.md` in the format given in `WIKI.md`, with a trigger-rich `description`. Link it from the pages it relates to, and remove the procedure text it replaces.
 - **Elevate**: a firm, frequently relevant rule might also belong in a repo's `CLAUDE.md` or in `~/.claude/CLAUDE.md`, or a skill might be worth making always-on in `~/.claude/skills/`. Suggest these only; the mentor maintains those locations.
+- **Sensitive**: run `$H scan NAME`, and also read for sensitive prose the scanner can't catch. Propose moving it to `private/`, generalizing it, or deleting it. Check that no public page links to or names a private page.
 - **Gaps**: areas where you work with the mentor a lot but know little. Turn one or two into questions.
 
 ## 4. Propose

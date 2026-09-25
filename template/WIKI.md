@@ -16,7 +16,9 @@ This file defines how this apprentice's knowledge is organized. It is written fo
   projects/         # one page per repo or piece of work
   skills/           # procedures, one folder each: skills/<name>/SKILL.md
   journal/          # work log, one file per month: journal/2026-09.md
+  private/          # local-only knowledge, same layout and conventions; gitignored
   .state/           # machine bookkeeping (debrief queue); gitignored, never edit by hand
+  .scanignore       # optional: strings the mentor has OK'd for the sensitive-data guard, one per line
 ```
 
 Folders are created as needed. Don't create a new top-level folder unless no existing folder fits, and if you do, record it here.
@@ -87,8 +89,23 @@ While the apprentice is active, it treats these as its own skills: it knows thei
 
 `journal/YYYY-MM.md` has one bullet per debrief or reflection: `- 2026-09-25 (starsim): refactored time units; learned: X, Y; skill candidates: Z`. It's a record of the work done, and reflection draws on it to spot recurring patterns.
 
+## Private knowledge
+
+`private/` holds knowledge that's useful to keep but shouldn't be committed. Examples: notes about specific colleagues, confidential or unpublished work, anything under embargo, and personal circumstances the mentor has shared. It uses the same conventions as the public wiki (topic pages, lesson format, links), with its own index at `private/Home.md`. It's gitignored, so it exists only on this machine and isn't backed up by git. The mentor handles backup separately if they want it.
+
+- **One-way links.** Private pages may link to public ones (`[[../preferences/coding-style]]`). Public pages never link to, name, or hint at private pages or their content.
+- **Generalize first.** If a lesson can be stated without the sensitive detail, put the general version in the public wiki and only the detail in `private/`. Example: public, "Check authorship order with the mentor before submitting"; private, the specific people and the history behind it.
+- **When in doubt, private.** It's easy to move a page from `private/` to public later, and impossible to un-commit something.
+
+## Sensitive data
+
+- **Never store credentials** anywhere, including `private/`: API keys, tokens, passwords, private keys, connection strings. Record *where* a secret lives and how to get it instead ("the Azure key is in Key Vault `idm-kv`, secret `storage-key`").
+- **Personal data** about anyone other than the mentor goes in `private/` or nowhere. This includes contact details, health, HR or performance matters, and personal opinions about people.
+- **A guard hook** checks every write into this folder. If it sees something that looks like a credential (anywhere) or personal data such as an email address (outside `private/`), it stops and asks the mentor to confirm. If `private/` isn't gitignored, writes to it also require confirmation. False positives can be allowed permanently by adding the exact string to `.scanignore`.
+- The guard matches patterns, so it is a backstop and doesn't replace judgment. It can't recognize a confidential fact written in plain prose. The rules above still apply.
+
 ## What doesn't belong here
 
 - Anything that can be read from the code, git history, or a repo's own docs/`CLAUDE.md`.
 - One-off task details.
-- Secrets, credentials, or other people's personal data.
+- Credentials of any kind (see above).

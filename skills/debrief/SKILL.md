@@ -38,7 +38,7 @@ Look for what a thoughtful new employee would write down:
 - **Procedures**: multi-step workflows they walked you through. Record the steps.
 - **Your own mistakes**: what went wrong on your side and how to avoid it next time.
 
-Drop anything that can be read from the code, git history, or a repo's docs/`CLAUDE.md`; anything that only mattered for this task; and anything the wiki already says. Before adding, search the wiki (`grep -ril <keyword> <folder>`), and update the existing lesson rather than writing a near-duplicate. If a lesson's reason isn't clear from the session, ask (step 4) rather than inventing one.
+Never extract credentials (keys, tokens, passwords). If the session involved one, the lesson is at most *where it lives*, never the value. Drop anything that can be read from the code, git history, or a repo's docs/`CLAUDE.md`; anything that only mattered for this task; and anything the wiki already says. Before adding, search the wiki (`grep -ril <keyword> <folder>`), and update the existing lesson rather than writing a near-duplicate. If a lesson's reason isn't clear from the session, ask (step 4) rather than inventing one.
 
 ## 3. Decide where each lesson goes
 
@@ -46,6 +46,7 @@ Follow the layout in `WIKI.md`. In brief:
 
 - Specific to this repo → `projects/<name>.md`. Create the page if needed, with `repo:` frontmatter set to the repo root.
 - About the mentor, or true across their work → `me/`, `preferences/`, `domain/`, or `tools/`. A good test: would this still apply in a different repo? Also check whether the same lesson already appears on another project's page. If it does, that's a sign it belongs on a general page.
+- Sensitive but worth keeping → `private/`, following the same layout (e.g. `private/domain/people.md`). "Sensitive" means information about specific colleagues, confidential or unpublished work, or personal matters. Generalize first: when a lesson can be stated without the sensitive detail, put the general version in the public wiki as well. See "Private knowledge" in `WIKI.md`.
 - A procedure taught more than once, or long and clearly reusable → a **skill candidate**. Don't write the skill during a debrief; record it in the journal line and mention it. `/aipprentice:reflect` graduates candidates into `skills/`.
 
 ## 4. Apply: small changes directly, big changes by proposal
@@ -60,6 +61,9 @@ Follow the layout in `WIKI.md`. In brief:
 - new pages outside `projects/`, new folders, and anything in `skills/`,
 - deleting absorbed auto-memory files (see step 5),
 - anything outside the apprentice folder (e.g. a repo's `CLAUDE.md`). Only ever propose these.
+- **anything sensitive, public or private.** Mark it `⚠ sensitive` in the list and say where you'd put it. The mentor decides whether it's kept at all, and whether it goes in `private/`.
+
+If the guard hook asks the mentor to confirm a write, don't try to get around it (e.g. by rewording to dodge the pattern, or by writing through a different tool). The prompt is the mentor's decision point.
 
 Present proposals as a single numbered list, one line each: the lesson, the target page, and whether it's new or an update. The mentor can then answer in shorthand ("1, 3, 4; drop 2; 5 is wrong, it's actually…"). After the list, add at most three **questions for my mentor**. These are things you noticed but couldn't interpret, e.g. "You rewrote my plot legend both times. Is that a general rule or specific to those figures?"
 
@@ -69,5 +73,6 @@ Write in the lesson format from `WIKI.md`: rule first, then *Why:*, then provena
 
 1. **Inbox:** once an auto-memory file's content is in the wiki (or deliberately dropped), run `$H absorbed NAME <file> ...`. Then offer to delete the absorbed files and their `MEMORY.md` lines so the harness stops loading duplicates. Only delete once the mentor agrees.
 2. **Sessions:** mark each debriefed session so the hook doesn't re-queue it: `$H done NAME <session_id> ...`. Use the session ID from the activation context for the current session, and include backlog sessions the mentor chose to skip.
-3. **Journal:** add one line per session with `$H journal NAME "<one-sentence summary of the work>; learned: <short list>; skill candidates: <if any>"`.
-4. **Report briefly:** pages changed (with paths), what's awaiting approval, and questions. Mention that the changes are visible with `git diff` in the apprentice folder. Never commit.
+3. **Scan:** run `$H scan NAME`. If it reports anything, show the findings to the mentor and fix or remove them before reporting. Don't add strings to `.scanignore` yourself; only the mentor does that.
+4. **Journal:** add one line per session with `$H journal NAME "<one-sentence summary of the work>; learned: <short list>; skill candidates: <if any>"`.
+5. **Report briefly:** pages changed (list `private/` pages separately), what's awaiting approval, and questions. Mention that public changes are visible with `git diff` in the apprentice folder (private ones aren't, since they're gitignored). Never commit.

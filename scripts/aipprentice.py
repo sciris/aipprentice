@@ -17,7 +17,8 @@ Usage:
     aipprentice.py journal NAME TEXT                      # append to this month's journal page
     aipprentice.py condense PATH_OR_SESSION_ID            # print a transcript as compact dialogue
     aipprentice.py paths NAME                             # print locations
-    aipprentice.py session-start | session-end            # hook entry points (read hook JSON on stdin)
+    aipprentice.py scan NAME [FILE ...]                   # check for secrets / personal data; exit 1 if found
+    aipprentice.py session-start | session-end | pre-write  # hook entry points (read hook JSON on stdin)
 
 Stdlib only; hooks must be fast and never fail loudly.
 """
@@ -145,6 +146,25 @@ class Apprentice:
             sys.exit(f'Unknown apprentice "{name}". Registered: {", ".join(reg) or "none"}. Activate with --path DIR to register or create it.')
         return cls(name, reg[name])
 
+    @property
+    def private(self):
+        return self.path / 'private'
+
+    def is_private(self, path):
+        path = Path(path).expanduser().resolve()
+        return path == self.private or self.private in path.parents
+
+    def private_is_ignored(self):
+        """ True if private/ is gitignored, or the folder isn't in a git repo at all """
+        try:
+            inside = subprocess.run(['git', '-C', str(self.path), 'rev-parse', '--is-inside-work-tree'], capture_output=True, text=True, timeout=2)
+            if inside.returncode != 0:
+                return True
+            probe = subprocess.run(['git', '-C', str(self.path), 'check-ignore', '-q', 'private/probe.md'], capture_output=True, timeout=2)
+            return probe.returncode == 0
+        except Exception:
+            return False
+
     def page(self, rel):
         p = self.path / rel
         return p.read_text() if p.exists() else ''
@@ -200,6 +220,8 @@ class Apprentice:
             '', '## APPRENTICE.md', capped(self.page('APPRENTICE.md')) or '(missing)',
             '', '## Home.md', capped(self.page('Home.md')) or '(missing)',
         ]
+        if (self.private / 'Home.md').exists():
+            L += ['', '## private/Home.md (local only, gitignored: never copy its content or page names into public pages)', capped(self.page('private/Home.md'))]
         pp = self.project_page(cwd)
         if pp:
             L += ['', f'## Project page: {pp.relative_to(self.path)}', capped(pp.read_text())]
@@ -210,6 +232,8 @@ class Apprentice:
             L += ['', '## Apprentice skills', 'These are your own procedures. When one applies, read its SKILL.md and follow it.']
             L += [f'- **{n}**: {d} (`{p}`)' for n, d, p in skills]
         notes = []
+        if self.private.exists() and not self.private_is_ignored():
+            notes.append('WARNING: `private/` exists but is NOT gitignored, so private knowledge could be committed. Tell the user now (not later) and suggest adding `private/` to the apprentice\'s .gitignore.')
         pend = self.pending()
         if pend:
             here = len(self.pending(cwd))
@@ -436,8 +460,135 @@ def cmd_condense(args):
                     inp = b.get('input', {})
                     arg = inp.get('description') or inp.get('file_path') or inp.get('command') or inp.get('pattern') or inp.get('skill') or ''
                     out.append(f'  [{b.get("name")}: {short(arg, 160)}]')
-    print(f'# Transcript {path.stem} ({title_of(path) or "untitled"})')
-    print('\n'.join(out))
+    print(f'# Transcript {path.stem} ({title_of(path) or "untitled"}); secrets redacted')
+    print(redact('\n'.join(out)))
+
+
+# %% Sensitive-data scanning
+
+# (label, severity, pattern). 'secret' = credentials that must never be stored; 'personal' = needs a human OK
+SENSITIVE_PATTERNS = [
+    ('private key',            'secret',   r'-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----'),
+    ('AWS access key',         'secret',   r'\b(?:AKIA|ASIA)[0-9A-Z]{16}\b'),
+    ('GitHub token',           'secret',   r'\b(?:gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{40,})\b'),
+    ('Anthropic API key',      'secret',   r'\bsk-ant-[A-Za-z0-9_-]{20,}'),
+    ('OpenAI-style API key',   'secret',   r'\bsk-(?:proj-)?[A-Za-z0-9_-]{32,}'),
+    ('Slack token',            'secret',   r'\bxox[abposr]-[A-Za-z0-9-]{10,}'),
+    ('Google API key',         'secret',   r'\bAIza[0-9A-Za-z_-]{35}\b'),
+    ('Azure key / conn string','secret',   r'(?i)\b(?:AccountKey|SharedAccessKey|sig)=[A-Za-z0-9+/%=]{20,}'),
+    ('JWT',                    'secret',   r'\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'),
+    ('URL with credentials',   'secret',   r'\b[a-z][a-z0-9+.-]*://[^/\s:@"\']+:[^/\s@"\']+@'),
+    ('credential assignment',  'secret',   r'(?i)\b(?:api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|token|password|passwd|pwd|client[_-]?secret)\b["\']?\s*[:=]\s*["\']?(?![<${*%]|x{3}|your|my[_-]|placeholder|redacted|example|changeme|dummy|none\b|null\b)([^\s"\'`,;)]{8,})'),
+    ('email address',          'personal', r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'),
+]
+SENSITIVE_RE = [(label, sev, re.compile(pat)) for label, sev, pat in SENSITIVE_PATTERNS]
+
+
+def mask(s):
+    return s if len(s) <= 8 else f'{s[:4]}…{s[-2:]}'
+
+
+def allowlist_for(path):
+    """ Literal strings the mentor has OK'd, one per line, in <apprentice>/.scanignore """
+    for a in all_apprentices():
+        if a.path == path or a.path in path.parents:
+            f = a.path / '.scanignore'
+            if f.exists():
+                return [l.strip() for l in f.read_text().splitlines() if l.strip() and not l.startswith('#')]
+    return []
+
+
+def scan_text(text, allow=()):
+    """ Return [(label, severity, masked_match, line_no)] """
+    hits = []
+    for i, line in enumerate(text.splitlines(), 1):
+        for label, sev, rx in SENSITIVE_RE:
+            for m in rx.finditer(line):
+                found = m.group(0)
+                if any(a in found or found in a for a in allow):
+                    continue
+                hits.append((label, sev, mask(found), i))
+    return hits
+
+
+def redact(text):
+    """ Mask secrets (not personal data) before text is shown to a model, e.g. in condensed transcripts """
+    for label, sev, rx in SENSITIVE_RE:
+        if sev == 'secret':
+            text = rx.sub(f'[REDACTED {label}]', text)
+    return text
+
+
+def all_apprentices():
+    return [Apprentice(n, p) for n, p in read_json(REGISTRY, {}).items() if Path(p).exists()]
+
+
+def apprentice_owning(path):
+    path = Path(path).expanduser().resolve()
+    for a in all_apprentices():
+        if path == a.path or a.path in path.parents:
+            return a
+    return None
+
+
+def cmd_scan(args):
+    """ Scan an apprentice's whole folder (or given files); exit 1 if anything is found """
+    a = Apprentice.get(args[0])
+    files = [Path(f) for f in args[1:]] or [p for p in a.path.rglob('*') if p.is_file() and not {'.git', '.state'} & set(p.relative_to(a.path).parts)]
+    allow = allowlist_for(a.path)
+    n = 0
+    for f in sorted(files):
+        try:
+            text = f.read_text()
+        except (OSError, UnicodeDecodeError):
+            continue
+        for label, sev, found, line in scan_text(text, allow):
+            if sev == 'personal' and a.is_private(f):
+                continue
+            n += 1
+            print(f'{sev.upper():8s} {f}:{line}  {label}: {found}')
+    print(f'{n} finding(s).' if n else 'Clean: no secrets or personal data patterns found.')
+    sys.exit(1 if n else 0)
+
+
+def pre_write():
+    """
+    PreToolUse hook: if a write into any registered apprentice folder contains a
+    secret or personal-data pattern, require explicit user confirmation. Runs whether
+    or not an apprentice is active, since the folder is what's being protected.
+    """
+    data = read_stdin_json()
+    tool, inp = data.get('tool_name', ''), data.get('tool_input', {}) or {}
+    if tool == 'Bash':
+        text = inp.get('command', '')
+        owner = next((a for a in all_apprentices() if str(a.path) in text), None)
+        if owner is None and data.get('cwd'):
+            owner = apprentice_owning(data['cwd'])
+        private = owner is not None and str(owner.private) in text
+    else:
+        path = inp.get('file_path') or inp.get('notebook_path')
+        owner = apprentice_owning(path) if path else None
+        private = owner is not None and owner.is_private(path)
+        text = '\n'.join(str(inp.get(k, '')) for k in ('content', 'new_string', 'new_source'))
+        text += '\n'.join(str(e.get('new_string', '')) for e in inp.get('edits', []) or [])
+    if owner is None:
+        return
+    ask = lambda reason: print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'ask', 'permissionDecisionReason': reason}}))
+    if private and tool != 'Bash' and not owner.private_is_ignored():
+        return ask(f'aipprentice: writing to {owner.name}/private/, but private/ is NOT gitignored, so this could end up committed. Add "private/" to {owner.path}/.gitignore first.')
+    hits = scan_text(text, allowlist_for(owner.path))
+    if private: # Personal data is what private/ is for; credentials still need a human OK
+        hits = [h for h in hits if h[1] == 'secret']
+    if not hits:
+        return
+    summary = '; '.join(sorted({f'{label} ({found})' for label, sev, found, line in hits}))
+    has_secret = any(sev == 'secret' for label, sev, found, line in hits)
+    reason = (f'aipprentice: this write to apprentice "{owner.name}" looks like it contains '
+              + ('a SECRET — ' if has_secret else 'personal data — ') + summary
+              + '. Approve only if this is a false positive or you want it stored; add OK\'d strings to .scanignore to stop future prompts.')
+    if not private and not has_secret:
+        reason += ' If it should be kept but not committed, put it in private/ instead.'
+    ask(reason)
 
 
 # %% Hooks: silent unless the session activated an apprentice
@@ -486,8 +637,10 @@ COMMANDS = {
     'journal': cmd_journal,
     'condense': cmd_condense,
     'paths': cmd_paths,
+    'scan': cmd_scan,
     'session-start': lambda a: session_start(),
     'session-end': lambda a: session_end(),
+    'pre-write': lambda a: pre_write(),
 }
 
 
@@ -495,12 +648,12 @@ if __name__ == '__main__':
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
         sys.exit(__doc__)
     cmd, args = sys.argv[1], sys.argv[2:]
-    if cmd not in ('list', 'condense', 'session-start', 'session-end') and not [a for a in args if not a.startswith('--')]:
+    if cmd not in ('list', 'condense', 'session-start', 'session-end', 'pre-write') and not [a for a in args if not a.startswith('--')]:
         sys.exit(__doc__)
     try:
         COMMANDS[cmd](args)
     except Exception as e:
-        if cmd.startswith('session-'): # Never break the user's session over a hook failure
+        if cmd.startswith('session-') or cmd == 'pre-write': # Never break the user's session over a hook failure
             print(f'aipprentice hook error: {e}', file=sys.stderr)
             sys.exit(0)
         raise

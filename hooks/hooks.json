@@ -1,5 +1,5 @@
 {
-  "description": "aipprentice: inject global knowledge at session start; queue substantive sessions for debrief at session end",
+  "description": "aipprentice: re-inject context for activated sessions after resume/compact; queue activated sessions for debrief; require confirmation before secrets or personal data are written into an apprentice folder",
   "hooks": {
     "SessionStart": [
       {
@@ -19,6 +19,18 @@
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/aipprentice.py\" session-end",
             "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/aipprentice.py\" pre-write",
+            "timeout": 10
           }
         ]
       }
