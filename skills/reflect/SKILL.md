@@ -23,6 +23,7 @@ Run `$H pending NAME` and process those sessions with `$H condense <id>`, fannin
 ## 3. Find what needs attention
 
 - **Promote**: the same lesson appears on several project pages, or a project-page lesson is really about the mentor. Propose moving it to the right general page and linking back.
+- **Prune**: lessons that fail the keep test in the `debrief` skill. That means one-off design decisions, task status, things now recorded in code, and single-occurrence preferences that never recurred. This is usually the highest-value cleanup. Propose deleting them in one batch.
 - **Merge / split**: near-duplicate lessons, overlapping pages, or pages past ~150 lines.
 - **Contradict**: lessons that disagree. Propose a resolution, or ask which one is current.
 - **Stale**: lessons that name files, functions, flags, branches, people's roles, or deadlines. Spot-check that these still exist or still apply.

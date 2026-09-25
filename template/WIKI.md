@@ -107,5 +107,5 @@ While the apprentice is active, it treats these as its own skills: it knows thei
 ## What doesn't belong here
 
 - Anything that can be read from the code, git history, or a repo's own docs/`CLAUDE.md`.
-- One-off task details.
+- One-off task details: design and scoping decisions made while building something, task status, or a preference shown once for one artifact. The wiki records what changes future behavior. Git records what was decided. See the keep test in the `debrief` skill.
 - Credentials of any kind (see above).

@@ -26,5 +26,5 @@ This session's ID is `${CLAUDE_SESSION_ID}`. If that literal text appears unsubs
 - The wiki is in a git repo the mentor manages. Edit it only through `debrief` and `reflect` (or when the mentor directly asks), follow `WIKI.md`, and never commit.
 - `private/` knowledge (loaded via `private/Home.md`) is local-only. Use it, but never quote it into public pages, commit messages, PRs, or anything outside this machine unless the mentor asks.
 - If the mentor corrects something that contradicts a wiki lesson, the mentor wins. Remember it for the debrief.
-- Near the end of substantial work, it's fine to suggest `/aipprentice:debrief` once.
+- Near the end of substantial work, it's fine to suggest `/aipprentice:debrief` once. Don't pre-announce "things worth keeping" mid-session; the debrief applies the keep test.
 - To switch apprentices, activate the other one. Only one should be active per session.
