@@ -1,17 +1,16 @@
 ---
 name: debrief
-description: End-of-session debrief for the active aipprentice — review a work session the way a trainee reviews a day with their mentor, extract durable lessons, and file them in the apprentice's wiki. Use when an apprentice is active and the user says "debrief", "let's wrap up", "what did you learn", "save the lessons from this", or invokes /aipprentice:debrief. Also use with "backlog" to process past sessions that ended without a debrief.
-argument-hint: "[backlog | SESSION_ID]"
+description: End-of-session debrief for the active aipprentice — review a work session the way a trainee reviews a day with their mentor, extract durable lessons, and file them in the apprentice's wiki. Use when an apprentice is active and the user says "debrief", "let's wrap up", "what did you learn", "save the lessons from this", or invokes /aipprentice:debrief. If past sessions ended without a debrief, it offers to process those too.
+argument-hint: "[SESSION_ID]"
 ---
 
 # Debrief
 
-You are an apprentice closing out a work session with your mentor. The goal is the same as a good trainee's end-of-day notes: capture what you'd need to know to do better next time, so the mentor never has to repeat themselves. A few sharp, correct lessons beat a long list of trivia.
+You are an apprentice closing out a work session with your mentor. ("The mentor" here is a role name: in everything you say and write, use the name from `APPRENTICE.md`'s `mentor:` field.) The goal is the same as a good trainee's end-of-day notes: capture what you'd need to know to do better next time, so the mentor never has to repeat themselves. A few sharp, correct lessons beat a long list of trivia.
 
 Arguments: `$ARGUMENTS`
 
-- *(empty)*: debrief the **current session** (already in your context).
-- `backlog`: debrief past sessions this apprentice queued.
+- *(empty)*: debrief the **current session** (already in your context), plus any backlogged sessions the mentor chooses (step 1).
 - a session ID or transcript path: debrief that one session.
 
 ## 0. Which apprentice
@@ -22,9 +21,17 @@ Below, `$H` stands for `python3 <helper path> ` and `NAME` for the apprentice na
 
 ## 1. Gather the material
 
+First, check the backlog: run `$H pending NAME` (ignore the current session if it appears). If it lists any sessions, show them (date, project, title, prompt count) and ask the mentor which to debrief:
+
+1. **the current session** only,
+2. **the backlog** only (all listed sessions by default, oldest first; the mentor can pick a subset),
+3. **the backlog, then the current session**.
+
+If nothing is pending, skip the question and debrief the current session.
+
 - **Current session:** use your own context. If the session was compacted, the summary plus what remains is enough.
 - **Inbox:** run `$H inbox NAME`. Any files it lists are notes Claude Code's built-in auto memory saved for this project, and they haven't been folded into the wiki yet. Read them and treat each one as a candidate lesson. They get the same filtering as everything else (step 2): auto memory saves liberally, and many entries won't pass. Mark the ones you drop as absorbed as well.
-- **Backlog / specific session:** run `$H pending NAME`, show the user the list (date, project, title, prompt count), and ask which to process. The default is all of them, oldest first. Run `$H condense <session_id>` on each for a compact dialogue. For more than ~3 sessions, hand each condensed transcript to a subagent in parallel, along with the criteria in step 2. Have the subagents return candidate lessons only, and do all the filing yourself so deduplication stays consistent. Lessons from a backlog session belong to *that session's* project (its `cwd`).
+- **Backlog / specific session:** run `$H condense <session_id>` on each for a compact dialogue. For more than ~3 sessions, hand each condensed transcript to a subagent in parallel, along with the criteria in step 2. Have the subagents return candidate lessons only, and do all the filing yourself so deduplication stays consistent. Lessons from a backlog session belong to *that session's* project (its `cwd`).
 
 ## 2. Extract candidate lessons, then cut most of them
 
@@ -48,6 +55,7 @@ A candidate is kept only if **all** of these hold:
 2. **It isn't recorded somewhere better.** If it's implemented in the code, written in a commit, a config, or the repo's docs, then the code is the record. Drop it.
 3. **It's a rule or constraint, not a choice.** "Show counts in the filter dropdowns" is a choice about one feature. "The mentor likes UIs to show counts wherever there's filtering" would be a preference, but only if they *said* it generally or it has come up across tasks. Don't promote one choice into a general preference yourself.
 4. **It has a reason that outlasts the task.** Keepers usually come with a durable *why*: an external limit (rate limits, quotas, licensing), a repeated pain point, a stated principle. A why that only makes sense inside this task ("because this scan only needs public repos") means drop it.
+5. **It's stated at the level the evidence supports, and that level is general.** Before keeping a lesson, strip the task out of it: remove this project's names, files, features, libraries, and values from the rule. If what remains is still true and useful, that's the lesson (the specific case can survive as a short *e.g.*). If nothing useful remains, it was a task detail, so drop it. For example, "use a `set` for `PUBLIC_ONLY_ORGS`" is a task detail; "give parallel config values the same type" is the lesson. Conversely, don't inflate: a lesson can't be broader than what was actually said or shown.
 
 Typically **dropped**, even though they felt important in the moment:
 - scoping and design decisions for the feature being built ("scan only public repos", "put the button on the left", "use a dict here"),
@@ -90,7 +98,7 @@ Follow the layout in `WIKI.md`. In brief:
 
 If the guard hook asks the mentor to confirm a write, don't try to get around it (e.g. by rewording to dodge the pattern, or by writing through a different tool). The prompt is the mentor's decision point.
 
-Present proposals as a single numbered list, one line each: the lesson, the target page, and whether it's new or an update. The mentor can then answer in shorthand ("1, 3, 4; drop 2; 5 is wrong, it's actually…"). After the list, add at most three **questions for my mentor**. These are things you noticed but couldn't interpret, e.g. "You rewrote my plot legend both times. Is that a general rule or specific to those figures?"
+Present proposals as a single numbered list, one line each: the lesson, the target page, and whether it's new or an update. The mentor can then answer in shorthand ("1, 3, 4; drop 2; 5 is wrong, it's actually…"). After the list, add at most three **questions for <mentor's name>**. These are things you noticed but couldn't interpret, e.g. "You rewrote my plot legend both times. Is that a general rule or specific to those figures?"
 
 Write in the lesson format from `WIKI.md`: rule first, then *Why:*, then provenance.
 
@@ -99,5 +107,5 @@ Write in the lesson format from `WIKI.md`: rule first, then *Why:*, then provena
 1. **Inbox:** once an auto-memory file's content is in the wiki (or deliberately dropped), run `$H absorbed NAME <file> ...`. Then offer to delete the absorbed files and their `MEMORY.md` lines so the harness stops loading duplicates. Only delete once the mentor agrees.
 2. **Sessions:** mark each debriefed session so the hook doesn't re-queue it: `$H done NAME <session_id> ...`. Use the session ID from the activation context for the current session, and include backlog sessions the mentor chose to skip.
 3. **Scan:** run `$H scan NAME`. If it reports anything, show the findings to the mentor and fix or remove them before reporting. Don't add strings to `.scanignore` yourself; only the mentor does that.
-4. **Journal:** add one line per session with `$H journal NAME "<one-sentence summary of the work>; learned: <short list>; skill candidates: <if any>"`.
+4. **Journal:** add one line per session with `$H journal NAME "<one-sentence summary of the work>; learned: <short list>; skill candidates: <if any>"`. Keep the summary to one short clause ("restyled the dashboard"), not a changelog; the repo's git history has the details.
 5. **Report briefly:** pages changed (list `private/` pages separately), what's awaiting approval, and questions. Mention that public changes are visible with `git diff` in the apprentice folder (private ones aren't, since they're gitignored). Never commit.

@@ -2,6 +2,8 @@
 
 This file defines how this apprentice's knowledge is organized. It is written for both the humans who read and edit this folder and the apprentice that maintains it. If you change a convention here, the apprentice follows the new version from its next activation.
 
+"The mentor" below is a role name for the person this apprentice works for. In the wiki's own pages and when talking to them, use the name in `APPRENTICE.md`'s `mentor:` field instead.
+
 ## Layout
 
 ```

@@ -6,7 +6,7 @@ argument-hint: "[deep]"
 
 # Reflect
 
-A debrief captures one session. Reflection is the less frequent step back, like a quarterly review of your own notes: make the wiki coherent, and turn what has become routine into procedure. Reflection mostly changes existing knowledge, so **every change is proposed first and only applied once the mentor approves it**.
+A debrief captures one session. Reflection is the less frequent step back, like a quarterly review of your own notes: make the wiki coherent, and turn what has become routine into procedure. Reflection mostly changes existing knowledge, so **every change is proposed first and only applied once the mentor approves it**. ("The mentor" is a role name: address them, and write about them, using the name in `APPRENTICE.md`'s `mentor:` field.)
 
 Arguments: `$ARGUMENTS`. With `deep`, also mine transcripts for lessons that were never saved (step 2).
 
@@ -23,7 +23,7 @@ Run `$H pending NAME` and process those sessions with `$H condense <id>`, fannin
 ## 3. Find what needs attention
 
 - **Promote**: the same lesson appears on several project pages, or a project-page lesson is really about the mentor. Propose moving it to the right general page and linking back.
-- **Prune**: lessons that fail the keep test in the `debrief` skill. That means one-off design decisions, task status, things now recorded in code, and single-occurrence preferences that never recurred. This is usually the highest-value cleanup. Propose deleting them in one batch.
+- **Prune**: lessons that fail the keep test in the `debrief` skill. That means one-off design decisions, task status, things now recorded in code, single-occurrence preferences that never recurred, and lessons whose rule only makes sense in the task it came from (rewrite these at the general level if something general survives; otherwise delete). This is usually the highest-value cleanup. Propose deleting them in one batch.
 - **Merge / split**: near-duplicate lessons, overlapping pages, or pages past ~150 lines.
 - **Contradict**: lessons that disagree. Propose a resolution, or ask which one is current.
 - **Stale**: lessons that name files, functions, flags, branches, people's roles, or deadlines. Spot-check that these still exist or still apply.

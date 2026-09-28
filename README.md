@@ -27,8 +27,7 @@ The first time you use a name, it asks for a folder, e.g. `/home/cliffk/idm/idm-
 |---|---|
 | `/aipprentice NAME` | Activate an apprentice for this session: loads its identity, `Home.md`, the page for the current repo, and its skills |
 | `/aipprentice list` | List registered apprentices |
-| `/aipprentice:debrief` | Review this session like end-of-day notes with a mentor and file the lessons in the wiki |
-| `/aipprentice:debrief backlog` | Debrief past activated sessions that ended without one |
+| `/aipprentice:debrief` | Review this session like end-of-day notes with a mentor and file the lessons in the wiki. If past activated sessions ended without a debrief, it asks whether to debrief the current session, the backlog, or the backlog then the current session |
 | `/aipprentice:reflect [deep]` | Tidy the wiki: promote, merge, retire stale lessons, and graduate repeated procedures into skills. `deep` also mines transcripts for things you had to say more than once |
 
 ## An apprentice's folder
@@ -60,7 +59,7 @@ Put the folder in git. The apprentice never commits, so `git diff` shows exactly
 
 - **During the session**, the apprentice applies its wiki, and Claude Code's built-in auto memory keeps saving notes as usual.
 - **Debrief** extracts corrections, confirmed approaches, preferences, domain facts, procedures, and its own mistakes. It also folds in the project's auto-memory notes (the "inbox"), and ends with a few questions for you about things it couldn't interpret.
-- **Automatic backlog**: when an activated session with ≥3 prompts ends without a debrief, a hook queues it. The next activation mentions it, and `debrief backlog` processes it from the saved transcript.
+- **Automatic backlog**: when an activated session with ≥3 prompts ends without a debrief, a hook queues it. The next activation mentions it, and the next debrief offers to process it from the saved transcript.
 - **Reflect** is the periodic review that keeps the wiki coherent.
 
 Small changes are written directly; big ones are proposed first as a numbered list you can answer in shorthand ("1, 3; drop 2"):

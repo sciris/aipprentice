@@ -6,9 +6,11 @@ An apprentice is a folder (see template/WIKI.md). Apprentices are registered by
 name and are only active in sessions where they were explicitly activated.
 
 Usage:
-    aipprentice.py list                                   # registered apprentices
-    aipprentice.py activate NAME [--path DIR] [--session ID] [--mentor TEXT]
-                                                          # register/create if needed, mark session active, print context
+    aipprentice.py list                                   # registered apprentices (flags missing folders)
+    aipprentice.py activate NAME [--path DIR] [--create] [--session ID] [--mentor NAME]
+                                                          # register (and with --create, scaffold) if needed (NAME: what to call the user), mark session active, print context
+    aipprentice.py relink NAME DIR                        # point a registered apprentice at its new folder
+    aipprentice.py forget NAME                            # remove an apprentice from the registry (folder untouched)
     aipprentice.py context NAME                           # print the context bundle without activating
     aipprentice.py pending NAME [--here]                  # sessions awaiting debrief (optionally only this project)
     aipprentice.py inbox NAME                             # this project's auto-memory entries not yet absorbed
@@ -213,11 +215,16 @@ class Apprentice:
 
     def context(self, cwd, session=None):
         """ Everything the model needs on activation """
+        mentor = frontmatter(self.page('APPRENTICE.md')).get('mentor')
+        if mentor:
+            who = f'You work for **{mentor}**. Call them "{mentor}" when talking to them and in everything you write to the wiki. The skills say "the mentor" only as a role name; never use that phrase with them unless it is their chosen name.'
+        else:
+            who = 'APPRENTICE.md has no `mentor:` field. Early on, ask the user what they\'d like to be called (offer their name if you know it, e.g. from `git config user.name`, as the default), then add `mentor: <that>` to its frontmatter. Until then, address them by name if known, not as "the mentor".'
         L = [
             f'# aipprentice: "{self.name}" is active for this session',
             f'Folder: `{self.path}`. Helper: `python3 {SCRIPT}` (pass `{self.name}` as the apprentice name).' + (f' Session: `{session}`.' if session else ''),
             f'You are this apprentice. Its knowledge lives in the wiki in that folder, organized per `WIKI.md`. Read `WIKI.md` before creating or restructuring any page. Consult wiki pages when relevant to the task (Home.md lists them all). Use `/aipprentice:debrief` to capture lessons and `/aipprentice:reflect` to consolidate.',
-            '', '## APPRENTICE.md', capped(self.page('APPRENTICE.md')) or '(missing)',
+            who, '', '## APPRENTICE.md', capped(self.page('APPRENTICE.md')) or '(missing)',
             '', '## Home.md', capped(self.page('Home.md')) or '(missing)',
         ]
         if (self.private / 'Home.md').exists():
@@ -237,7 +244,7 @@ class Apprentice:
         pend = self.pending()
         if pend:
             here = len(self.pending(cwd))
-            notes.append(f'{len(pend)} past session(s) ({here} from this project) have not been debriefed; suggest `/aipprentice:debrief backlog`.')
+            notes.append(f'{len(pend)} past session(s) ({here} from this project) have not been debriefed; the next `/aipprentice:debrief` will offer to process them.')
         inbox = self.inbox(cwd)
         if inbox:
             notes.append(f'{len(inbox)} auto-memory entr{"y" if len(inbox) == 1 else "ies"} for this project not yet folded into the wiki; the next debrief will absorb them.')
@@ -249,7 +256,7 @@ class Apprentice:
 def scaffold(name, path, mentor):
     """ Create a new apprentice folder from the template, never overwriting existing files """
     path.mkdir(parents=True, exist_ok=True)
-    subs = {'{{name}}': name, '{{date}}': str(datetime.date.today()), '{{mentor}}': mentor or 'its mentor'}
+    subs = {'{{name}}': name, '{{date}}': str(datetime.date.today()), '{{mentor}}': mentor or 'the mentor'}
     created = []
     for src in sorted(TEMPLATE.iterdir()):
         dst = path / src.name
@@ -265,36 +272,88 @@ def scaffold(name, path, mentor):
 
 # %% Commands
 
+def is_apprentice(path):
+    return (Path(path).expanduser() / 'APPRENTICE.md').exists()
+
+
+def missing_notes(reg):
+    """ Registered apprentices whose folders can't be found, with what to do about them """
+    missing = [name for name, path in reg.items() if not is_apprentice(path)]
+    if not missing:
+        return ''
+    L = ['MISSING: these registered apprentices have no APPRENTICE.md at their recorded folder (maybe moved or deleted):']
+    L += [f'- {name}\t{reg[name]}' for name in missing]
+    L.append('Ask the user, for each, whether to point it at its new folder (`relink NAME DIR`) or remove it from the list (`forget NAME`).')
+    return '\n'.join(L)
+
+
 def cmd_list(args):
     reg = read_json(REGISTRY, {})
     if not reg:
         print('No apprentices registered.')
     for name, path in reg.items():
-        ok = (Path(path) / 'APPRENTICE.md').exists()
-        print(f'{name}\t{path}' + ('' if ok else '\t(MISSING)'))
+        print(f'{name}\t{path}' + ('' if is_apprentice(path) else '\t(MISSING)'))
+    notes = missing_notes(reg)
+    if notes:
+        print('\n' + notes)
+
+
+def cmd_relink(args):
+    if len(args) != 2:
+        sys.exit('Usage: relink NAME DIR')
+    name, folder = args[0], Path(args[1]).expanduser().resolve()
+    reg = read_json(REGISTRY, {})
+    if name not in reg:
+        sys.exit(f'No apprentice named "{name}" is registered.')
+    if not is_apprentice(folder):
+        sys.exit(f'No APPRENTICE.md in {folder}; not relinking.')
+    reg[name] = str(folder)
+    write_json(REGISTRY, reg)
+    print(f'{name}\t{folder}')
+
+
+def cmd_forget(args):
+    reg = read_json(REGISTRY, {})
+    name = args[0]
+    if reg.pop(name, None) is None:
+        sys.exit(f'No apprentice named "{name}" is registered.')
+    write_json(REGISTRY, reg)
+    print(f'Forgot "{name}" (its folder, if any, is untouched).')
 
 
 def cmd_activate(args):
     path = pop_opt(args, '--path')
     session = pop_opt(args, '--session')
     mentor = pop_opt(args, '--mentor')
+    create = '--create' in args
+    args = [a for a in args if a != '--create']
     if not args:
-        sys.exit('Usage: activate NAME [--path DIR] [--session ID] [--mentor TEXT]')
+        sys.exit('Usage: activate NAME [--path DIR] [--create] [--session ID] [--mentor NAME]')
     name = args[0]
     if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', name):
         sys.exit(f'Apprentice names must be lowercase-kebab-case: "{name}"')
     reg = read_json(REGISTRY, {})
 
+    notes = missing_notes(reg)
     if path is None:
         if name not in reg:
             print(f'UNKNOWN: no apprentice named "{name}". Ask the user for its folder (existing apprentice or where to create a new one), then rerun with --path.')
+            if notes:
+                print('\n' + notes)
             sys.exit(2)
+        if not is_apprentice(reg[name]):
+            print(notes)
+            print(f'\n"{name}" can\'t be activated until the user says where it is now; then run `relink {name} DIR` and activate again.')
+            sys.exit(3)
         path = reg[name]
     folder = Path(path).expanduser().resolve()
-    if (folder / 'APPRENTICE.md').exists():
+    if is_apprentice(folder):
         fm_name = frontmatter((folder / 'APPRENTICE.md').read_text()).get('name')
         if fm_name and fm_name != name:
             print(f'NOTE: folder says its name is "{fm_name}"; registering it as "{name}".')
+    elif not create:
+        print(f'NEW: there is no apprentice at {folder}. Confirm with the user that they want a new apprentice "{name}" created there, then rerun with --create.')
+        sys.exit(4)
     else:
         created = scaffold(name, folder, mentor)
         print(f'CREATED: new apprentice "{name}" at {folder} ({", ".join(created)}).')
@@ -310,6 +369,8 @@ def cmd_activate(args):
         write_json(ACTIVE, active)
     else:
         print('WARNING: no session ID given; hooks will not queue this session or re-inject after compaction.')
+    if notes:
+        print(notes + '\n')
     print(Apprentice(name, folder).context(os.getcwd(), session))
 
 
@@ -629,6 +690,8 @@ def session_end():
 COMMANDS = {
     'list': cmd_list,
     'activate': cmd_activate,
+    'relink': cmd_relink,
+    'forget': cmd_forget,
     'context': cmd_context,
     'pending': cmd_pending,
     'inbox': cmd_inbox,
