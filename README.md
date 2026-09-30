@@ -81,7 +81,7 @@ Small changes are written directly; big ones are proposed first as a numbered li
 
 ## Housekeeping state
 
-Kept in `~/.claude/aipprentice/`: `registry.json` (name → folder) and `active.json` (which sessions activated which apprentice). The debrief queue is stored in each apprentice's `.state/`. Environment overrides: `AIPPRENTICE_HOME` (state location) and `AIPPRENTICE_MIN_TURNS` (queue threshold, default 3).
+Kept in `~/.claude/aipprentice/`: `registry.json` (name → folder), `aliases.json` (alias → name, e.g. `ai` → `cliff-ai`; add one with `/aipprentice alias cliff-ai ai`), and `active.json` (which sessions activated which apprentice). The debrief queue is stored in each apprentice's `.state/`. Environment overrides: `AIPPRENTICE_HOME` (state location) and `AIPPRENTICE_MIN_TURNS` (queue threshold, default 3).
 
 ## Notes
 

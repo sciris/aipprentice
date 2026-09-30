@@ -7,9 +7,12 @@ name and are only active in sessions where they were explicitly activated.
 
 Usage:
     aipprentice.py list                                   # registered apprentices (flags missing folders)
+    aipprentice.py start [NAME | list | alias NAME ALIAS] [--session ID]  # the skill's preprocessing step; always exits 0
     aipprentice.py activate NAME [--path DIR] [--create] [--session ID] [--mentor NAME]
                                                           # register (and with --create, scaffold) if needed (NAME: what to call the user), mark session active, print context
     aipprentice.py relink NAME DIR                        # point a registered apprentice at its new folder
+    aipprentice.py alias NAME ALIAS                       # let ALIAS stand for NAME (e.g. "ai" for "cliff-ai")
+    aipprentice.py unalias ALIAS                          # remove an alias
     aipprentice.py forget NAME                            # remove an apprentice from the registry (folder untouched)
     aipprentice.py context NAME                           # print the context bundle without activating
     aipprentice.py pending NAME [--here]                  # sessions awaiting debrief (optionally only this project)
@@ -38,6 +41,7 @@ CLAUDE_DIR = Path(os.environ.get('CLAUDE_CONFIG_DIR', Path.home() / '.claude'))
 PROJECTS_DIR = CLAUDE_DIR / 'projects'
 STATE = Path(os.environ.get('AIPPRENTICE_HOME', CLAUDE_DIR / 'aipprentice'))
 REGISTRY = STATE / 'registry.json'
+ALIASES = STATE / 'aliases.json' # alias -> registered name
 ACTIVE = STATE / 'active.json'
 SCRIPT = Path(__file__).resolve()
 TEMPLATE = SCRIPT.parent.parent / 'template'
@@ -144,6 +148,7 @@ class Apprentice:
     @classmethod
     def get(cls, name):
         reg = read_json(REGISTRY, {})
+        name = read_json(ALIASES, {}).get(name, name)
         if name not in reg:
             sys.exit(f'Unknown apprentice "{name}". Registered: {", ".join(reg) or "none"}. Activate with --path DIR to register or create it.')
         return cls(name, reg[name])
@@ -287,12 +292,26 @@ def missing_notes(reg):
     return '\n'.join(L)
 
 
+def partial_matches(name, reg):
+    """ Registered names that contain `name` as whole hyphen-separated words, e.g. "ai" -> "cliff-ai" (suggestions only) """
+    words = name.split('-')
+    n = len(words)
+    matches = []
+    for other in reg:
+        parts = other.split('-')
+        if any(parts[i:i+n] == words for i in range(len(parts) - n + 1)):
+            matches.append(other)
+    return matches
+
+
 def cmd_list(args):
     reg = read_json(REGISTRY, {})
     if not reg:
         print('No apprentices registered.')
+    aliases = read_json(ALIASES, {})
     for name, path in reg.items():
-        print(f'{name}\t{path}' + ('' if is_apprentice(path) else '\t(MISSING)'))
+        also = [a for a, n in aliases.items() if n == name]
+        print(f'{name}\t{path}' + ('' if is_apprentice(path) else '\t(MISSING)') + (f'\t(alias: {", ".join(also)})' if also else ''))
     notes = missing_notes(reg)
     if notes:
         print('\n' + notes)
@@ -312,12 +331,41 @@ def cmd_relink(args):
     print(f'{name}\t{folder}')
 
 
+def cmd_alias(args):
+    if len(args) != 2:
+        sys.exit('Usage: alias NAME ALIAS')
+    name, alias = args
+    reg = read_json(REGISTRY, {})
+    if name not in reg:
+        sys.exit(f'No apprentice named "{name}" is registered.')
+    if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', alias):
+        sys.exit(f'Aliases must be lowercase-kebab-case: "{alias}"')
+    if alias in reg:
+        sys.exit(f'"{alias}" is already the name of a registered apprentice.')
+    aliases = read_json(ALIASES, {})
+    old = aliases.get(alias)
+    aliases[alias] = name
+    write_json(ALIASES, aliases)
+    print(f'ALIASED: "{alias}" now means "{name}"' + (f' (was "{old}")' if old and old != name else '') + '.')
+
+
+def cmd_unalias(args):
+    aliases = read_json(ALIASES, {})
+    if aliases.pop(args[0], None) is None:
+        sys.exit(f'No alias "{args[0]}".')
+    write_json(ALIASES, aliases)
+    print(f'Removed alias "{args[0]}".')
+
+
 def cmd_forget(args):
     reg = read_json(REGISTRY, {})
     name = args[0]
     if reg.pop(name, None) is None:
         sys.exit(f'No apprentice named "{name}" is registered.')
     write_json(REGISTRY, reg)
+    aliases = read_json(ALIASES, {})
+    if name in aliases.values():
+        write_json(ALIASES, {a: n for a, n in aliases.items() if n != name})
     print(f'Forgot "{name}" (its folder, if any, is untouched).')
 
 
@@ -335,9 +383,15 @@ def cmd_activate(args):
     reg = read_json(REGISTRY, {})
 
     notes = missing_notes(reg)
+    if path is None and name not in reg:
+        name = read_json(ALIASES, {}).get(name, name)
     if path is None:
         if name not in reg:
-            print(f'UNKNOWN: no apprentice named "{name}". Ask the user for its folder (existing apprentice or where to create a new one), then rerun with --path.')
+            print(f'UNKNOWN: no apprentice named "{name}". Registered: {", ".join(reg) or "none"}.')
+            matches = partial_matches(name, reg)
+            if matches:
+                print(f'SUGGEST: ask the user whether they meant {" or ".join(repr(m) for m in matches)}. If so, run `alias NAME {name}` so "{name}" works next time, then activate NAME.')
+            print('Otherwise ask the user for its folder (existing apprentice or where to create a new one), then rerun with --path.')
             if notes:
                 print('\n' + notes)
             sys.exit(2)
@@ -372,6 +426,25 @@ def cmd_activate(args):
     if notes:
         print(notes + '\n')
     print(Apprentice(name, folder).context(os.getcwd(), session))
+
+
+def cmd_start(args):
+    """ Entry point for the skill's preprocessing: list or activate, always exiting 0 (a nonzero exit would abort the skill) """
+    args = ' '.join(args).split()
+    session = pop_opt(args, '--session')
+    code = 0
+    try:
+        if not args or args == ['list']:
+            cmd_list([])
+        elif args[0] in ('alias', 'unalias'):
+            COMMANDS[args[0]](args[1:])
+        else:
+            cmd_activate(args[:1] + ['--session', session or ''])
+    except SystemExit as e:
+        if isinstance(e.code, str):
+            print(e.code)
+        code = e.code if isinstance(e.code, int) else 1
+    print(f'\nEXIT CODE: {code}')
 
 
 def cmd_context(args):
@@ -701,6 +774,9 @@ COMMANDS = {
     'condense': cmd_condense,
     'paths': cmd_paths,
     'scan': cmd_scan,
+    'start': cmd_start,
+    'alias': cmd_alias,
+    'unalias': cmd_unalias,
     'session-start': lambda a: session_start(),
     'session-end': lambda a: session_end(),
     'pre-write': lambda a: pre_write(),
@@ -711,7 +787,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
         sys.exit(__doc__)
     cmd, args = sys.argv[1], sys.argv[2:]
-    if cmd not in ('list', 'condense', 'session-start', 'session-end', 'pre-write') and not [a for a in args if not a.startswith('--')]:
+    if cmd not in ('list', 'start', 'condense', 'session-start', 'session-end', 'pre-write') and not [a for a in args if not a.startswith('--')]:
         sys.exit(__doc__)
     try:
         COMMANDS[cmd](args)
