@@ -1,5 +1,5 @@
 {
-  "description": "aipprentice: re-inject context for activated sessions after resume/compact; queue activated sessions for debrief; require confirmation before secrets or personal data are written into an apprentice folder",
+  "description": "aipprentice: re-inject context for activated sessions after resume/compact; queue activated sessions whose work was never staged or debriefed; require confirmation before secrets or personal data are written into an apprentice folder",
   "hooks": {
     "SessionStart": [
       {

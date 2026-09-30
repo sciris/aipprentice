@@ -19,7 +19,7 @@ This file defines how this apprentice's knowledge is organized. It is written fo
   skills/           # procedures, one folder each: skills/<name>/SKILL.md
   journal/          # work log, one file per month: journal/2026-09.md
   private/          # local-only knowledge, same layout and conventions; gitignored
-  .state/           # machine bookkeeping (debrief queue); gitignored, never edit by hand
+  .state/           # machine bookkeeping (debrief queue, staged lessons); gitignored, never edit by hand
   .scanignore       # optional: strings the mentor has OK'd for the sensitive-data guard, one per line
 ```
 
@@ -89,7 +89,7 @@ While the apprentice is active, it treats these as its own skills: it knows thei
 
 ## Journal
 
-`journal/YYYY-MM.md` has one bullet per debrief or reflection: `- 2026-09-25 (starsim): refactored time units; learned: X, Y; skill candidates: Z`. It's a record of the work done, and reflection draws on it to spot recurring patterns.
+`journal/YYYY-MM.md` has one bullet per debrief, review, or reflection: `- 2026-09-25 (starsim): refactored time units; learned: X, Y; skill candidates: Z`. It's a record of the work done, and reflection draws on it to spot recurring patterns.
 
 ## Private knowledge
 
@@ -109,5 +109,5 @@ While the apprentice is active, it treats these as its own skills: it knows thei
 ## What doesn't belong here
 
 - Anything that can be read from the code, git history, or a repo's own docs/`CLAUDE.md`.
-- One-off task details: design and scoping decisions made while building something, task status, or a preference shown once for one artifact. The wiki records what changes future behavior. Git records what was decided. See the keep test in the `debrief` skill.
+- One-off task details: design and scoping decisions made while building something, task status, or a preference shown once for one artifact. The wiki records what changes future behavior. Git records what was decided. See the keep test in the plugin's lessons guide (`guides/lessons.md`).
 - Credentials of any kind (see above).

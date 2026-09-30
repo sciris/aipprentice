@@ -33,14 +33,17 @@ Act on the output above; don't rerun the activation unless a step says to.
    - Output begins with `CREATED`: a new apprentice was scaffolded. Tell the user the folder and the files created. Suggest that they fill in the **Role** section of `APPRENTICE.md` (or tell you and you'll write it), and that the folder is meant to be committed to git by them.
    - Output begins with `ALIASED`: the user added an alias. Confirm it in one line and stop; don't activate anything.
 3. The rest of the output is the apprentice's **context**: its identity, `Home.md`, the page for this project, its skills, and housekeeping notes. Take it on board. From now until the end of the session you *are* this apprentice. Apply what's in its wiki, consult its pages and skills when they're relevant, and notice what's worth learning.
-4. Confirm in one or two lines, e.g. "cliff-ai active: 23 pages, 2 skills, starsim project page loaded." If there are housekeeping notes (an undebriefed backlog, or inbox entries), mention them in one line. Then carry on with whatever the user was doing or asks next.
+4. Confirm in one or two lines, e.g. "cliff-ai active: 23 pages, 2 skills, starsim project page loaded." If there are housekeeping notes (staged lessons, an unstaged or undebriefed backlog, or inbox entries), mention them in one line. Then carry on with whatever the user was doing or asks next.
 
 ## While active
 
 "The mentor" below is a role name. Address and refer to the user by the name in `APPRENTICE.md`'s `mentor:` field, and write that name, not "the mentor", in wiki pages.
 
-- The wiki is in a git repo the mentor manages. Edit it only through `debrief` and `reflect` (or when the mentor directly asks), follow `WIKI.md`, and never commit.
+- The wiki is in a git repo the mentor manages. Edit it only through `debrief`, `review`, and `reflect` (or when the mentor directly asks), follow `WIKI.md`, and never commit.
 - `private/` knowledge (loaded via `private/Home.md`) is local-only. Use it, but never quote it into public pages, commit messages, PRs, or anything outside this machine unless the mentor asks.
-- If the mentor corrects something that contradicts a wiki lesson, the mentor wins. Remember it for the debrief.
-- Near the end of substantial work, it's fine to suggest `/aipprentice:debrief` once. Don't pre-announce "things worth keeping" mid-session; the debrief applies the keep test.
+- If the mentor corrects something that contradicts a wiki lesson, the mentor wins. Remember it for the debrief or the next staging.
+- **Auto mode** (the default): follow the "Learning mode: auto" section of the context. Stage lessons in the background at natural stopping points, and don't suggest a debrief.
+- **Manual mode**: near the end of substantial work, it's fine to suggest `/aipprentice:debrief` once.
+- In either mode, don't pre-announce "things worth keeping" mid-session; staging and debriefs apply the keep test.
+- To switch modes, run `$H mode NAME auto` or `$H mode NAME manual`.
 - To switch apprentices, activate the other one. Only one should be active per session.

@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "aipprentice marketplace: a Claude Code plugin that accumulates knowledge across sessions like a trainee employee.",
-    "version": "0.2.4"
+    "version": "0.3.0"
   },
   "plugins": [
     {
       "name": "aipprentice",
       "source": ".",
-      "description": "An apprentice that learns from working with you: end-of-session debriefs, a cross-project knowledge base, and periodic reflection.",
+      "description": "An apprentice that learns from working with you: background lesson staging with review (or end-of-session debriefs), a cross-project knowledge base, and periodic reflection.",
       "keywords": ["memory", "learning", "apprentice", "knowledge-base", "debrief"]
     }
   ]

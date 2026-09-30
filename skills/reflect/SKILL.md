@@ -1,12 +1,12 @@
 ---
 name: reflect
-description: Periodic review of everything the active aipprentice has learned — tidy the wiki, promote lessons that recur across projects to general pages, retire stale or contradictory ones, and graduate repeated procedures into skills. Use when an apprentice is active and the user says "reflect", "review what you've learned", "clean up the wiki", "what have you learned about me", or invokes /aipprentice:reflect.
+description: Periodic review of everything the active aipprentice has learned — tidy the wiki, promote lessons that recur across projects to general pages, retire stale or contradictory ones, and graduate repeated procedures into skills. Use when an apprentice is active and the user says "reflect", "clean up the wiki", "tidy your notes", "what have you learned about me", or invokes /aipprentice:reflect.
 argument-hint: "[deep]"
 ---
 
 # Reflect
 
-A debrief captures one session. Reflection is the less frequent step back, like a quarterly review of your own notes: make the wiki coherent, and turn what has become routine into procedure. Reflection mostly changes existing knowledge, so **every change is proposed first and only applied once the mentor approves it**. ("The mentor" is a role name: address them, and write about them, using the name in `APPRENTICE.md`'s `mentor:` field.)
+A debrief captures one session, and a review files what was staged across a few. Reflection is the less frequent step back, like a quarterly review of your own notes: make the wiki coherent, and turn what has become routine into procedure. Reflection mostly changes existing knowledge, so **every change is proposed first and only applied once the mentor approves it**. ("The mentor" is a role name: address them, and write about them, using the name in `APPRENTICE.md`'s `mentor:` field.)
 
 Arguments: `$ARGUMENTS`. With `deep`, also mine transcripts for lessons that were never saved (step 2).
 
@@ -18,12 +18,12 @@ Read without editing: every wiki page (including `private/`), `skills/*/SKILL.md
 
 ## 2. (deep only) Mine unsaved lessons
 
-Run `$H pending NAME` and process those sessions with `$H condense <id>`, fanning out to subagents. Look for anything the mentor had to say **more than once**, across sessions: repeated corrections, explanations, or instructions. These are the costliest gaps. Mark processed sessions with `$H done NAME ...`.
+Run `$H pending NAME` and process those sessions with `$H condense <id>`, fanning out to subagents. Look for anything the mentor had to say **more than once**, across sessions: repeated corrections, explanations, or instructions. These are the costliest gaps. Mark processed sessions with `$H done NAME ...`. In auto mode, don't mark them: leave them for `/aipprentice:review` to stage.
 
 ## 3. Find what needs attention
 
 - **Promote**: the same lesson appears on several project pages, or a project-page lesson is really about the mentor. Propose moving it to the right general page and linking back.
-- **Prune**: lessons that fail the keep test in the `debrief` skill. That means one-off design decisions, task status, things now recorded in code, single-occurrence preferences that never recurred, and lessons whose rule only makes sense in the task it came from (rewrite these at the general level if something general survives; otherwise delete). This is usually the highest-value cleanup. Propose deleting them in one batch.
+- **Prune**: lessons that fail the keep test in the lessons guide (`${CLAUDE_SKILL_DIR}/../../guides/lessons.md`). That means one-off design decisions, task status, things now recorded in code, single-occurrence preferences that never recurred, and lessons whose rule only makes sense in the task it came from (rewrite these at the general level if something general survives; otherwise delete). This is usually the highest-value cleanup. Propose deleting them in one batch.
 - **Merge / split**: near-duplicate lessons, overlapping pages, or pages past ~150 lines.
 - **Contradict**: lessons that disagree. Propose a resolution, or ask which one is current.
 - **Stale**: lessons that name files, functions, flags, branches, people's roles, or deadlines. Spot-check that these still exist or still apply.

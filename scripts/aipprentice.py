@@ -15,8 +15,11 @@ Usage:
     aipprentice.py unalias ALIAS                          # remove an alias
     aipprentice.py forget NAME                            # remove an apprentice from the registry (folder untouched)
     aipprentice.py context NAME                           # print the context bundle without activating
-    aipprentice.py pending NAME [--here]                  # sessions awaiting debrief (optionally only this project)
-    aipprentice.py inbox NAME                             # this project's auto-memory entries not yet absorbed
+    aipprentice.py mode NAME [auto | manual]              # show or set how lessons are captured (default auto)
+    aipprentice.py pending NAME [--here]                  # sessions awaiting debrief/staging (optionally only this project)
+    aipprentice.py staged NAME                            # staged lesson files awaiting review
+    aipprentice.py unstage NAME SESSION_ID ...            # clear sessions' staged files after review (and drop them from pending)
+    aipprentice.py inbox NAME [--cwd DIR]                 # a project's auto-memory entries not yet absorbed
     aipprentice.py absorbed NAME FILE ...                 # mark auto-memory files as absorbed into the wiki
     aipprentice.py done NAME SESSION_ID ...               # mark sessions as debriefed (or dismissed)
     aipprentice.py journal NAME TEXT                      # append to this month's journal page
@@ -45,6 +48,8 @@ ALIASES = STATE / 'aliases.json' # alias -> registered name
 ACTIVE = STATE / 'active.json'
 SCRIPT = Path(__file__).resolve()
 TEMPLATE = SCRIPT.parent.parent / 'template'
+GUIDES = SCRIPT.parent.parent / 'guides'
+MODES = ('auto', 'manual')
 
 MIN_TURNS = int(os.environ.get('AIPPRENTICE_MIN_TURNS', 3)) # Sessions with fewer real user prompts aren't queued
 MAX_PAGE_CHARS = 8000 # Cap on each page injected into context
@@ -121,6 +126,30 @@ def auto_memory_dir(cwd):
     return PROJECTS_DIR / project_key(project_root(cwd)) / 'memory'
 
 
+def set_frontmatter(path, key, value):
+    """ Set a flat 'key: value' in a file's frontmatter, adding the field (or the frontmatter) if needed """
+    text = path.read_text()
+    m = re.match(r'^---\n(.*?)\n---', text, re.S)
+    if not m:
+        return path.write_text(f'---\n{key}: {value}\n---\n\n' + text)
+    lines = m.group(1).splitlines()
+    for i, line in enumerate(lines):
+        if line.split(':', 1)[0].strip() == key and not line.startswith(' '):
+            lines[i] = f'{key}: {value}'
+            break
+    else:
+        lines.append(f'{key}: {value}')
+    path.write_text('---\n' + '\n'.join(lines) + '\n---' + text[m.end():])
+
+
+def iso_ts(s):
+    """ Parse an ISO timestamp (e.g. '2026-09-30T12:00:00.000Z') to epoch seconds, or None """
+    try:
+        return datetime.datetime.fromisoformat(str(s).replace('Z', '+00:00')).timestamp()
+    except ValueError:
+        return None
+
+
 def frontmatter(text):
     """ Minimal YAML-frontmatter reader: flat 'key: value' pairs only """
     out = {}
@@ -144,6 +173,8 @@ class Apprentice:
         self.pending_file = self.state / 'pending.jsonl'
         self.debriefed_file = self.state / 'debriefed.txt'
         self.absorbed_file = self.state / 'absorbed.txt'
+        self.staged_dir = self.state / 'staged'
+        self.reviewed_file = self.state / 'reviewed.json' # session_id -> epoch seconds up to which it has been reviewed
 
     @classmethod
     def get(cls, name):
@@ -197,6 +228,30 @@ class Apprentice:
             out.append((fm.get('name', p.parent.name), fm.get('description', ''), p))
         return out
 
+    @property
+    def mode(self):
+        mode = frontmatter(self.page('APPRENTICE.md')).get('mode', 'auto')
+        return mode if mode in MODES else 'auto'
+
+    def staged_file(self, session_id):
+        return self.staged_dir / f'{session_id}.md'
+
+    def staged(self):
+        """ [(path, frontmatter, number of candidate lessons)] for each staged session, oldest first """
+        out = []
+        for p in sorted(self.staged_dir.glob('*.md'), key=lambda p: p.stat().st_mtime):
+            text = p.read_text()
+            m = re.search(r'^## Candidates\n(.*?)(?=^## |\Z)', text, re.S | re.M)
+            n = len(re.findall(r'^- ', m.group(1), re.M)) if m else 0
+            out.append((p, frontmatter(text), n))
+        return out
+
+    def captured_until(self, session_id):
+        """ Epoch seconds up to which this session's lessons have been staged or reviewed (0 if never) """
+        f = self.staged_file(session_id)
+        staged = f.stat().st_mtime if f.exists() else 0
+        return max(staged, read_json(self.reviewed_file, {}).get(session_id, 0))
+
     def debriefed(self):
         return set(self.debriefed_file.read_text().split()) if self.debriefed_file.exists() else set()
 
@@ -228,7 +283,8 @@ class Apprentice:
         L = [
             f'# aipprentice: "{self.name}" is active for this session',
             f'Folder: `{self.path}`. Helper: `python3 {SCRIPT}` (pass `{self.name}` as the apprentice name).' + (f' Session: `{session}`.' if session else ''),
-            f'You are this apprentice. Its knowledge lives in the wiki in that folder, organized per `WIKI.md`. Read `WIKI.md` before creating or restructuring any page. Consult wiki pages when relevant to the task (Home.md lists them all). Use `/aipprentice:debrief` to capture lessons and `/aipprentice:reflect` to consolidate.',
+            f'You are this apprentice. Its knowledge lives in the wiki in that folder, organized per `WIKI.md`. Read `WIKI.md` before creating or restructuring any page. Consult wiki pages when relevant to the task (Home.md lists them all). Learning mode: **{self.mode}**. '
+            + ('Lessons are staged in the background (see "Learning mode: auto" below); `/aipprentice:review` files them and `/aipprentice:reflect` consolidates.' if self.mode == 'auto' else 'Use `/aipprentice:debrief` to capture lessons and `/aipprentice:reflect` to consolidate.'),
             who, '', '## APPRENTICE.md', capped(self.page('APPRENTICE.md')) or '(missing)',
             '', '## Home.md', capped(self.page('Home.md')) or '(missing)',
         ]
@@ -238,24 +294,47 @@ class Apprentice:
         if pp:
             L += ['', f'## Project page: {pp.relative_to(self.path)}', capped(pp.read_text())]
         else:
-            L += ['', f'## Project page', f'None yet for `{project_root(cwd)}`. The debrief will create `projects/<name>.md` with `repo:` frontmatter if there is anything worth recording.']
+            L += ['', f'## Project page', f'None yet for `{project_root(cwd)}`. A debrief or review will create `projects/<name>.md` with `repo:` frontmatter if there is anything worth recording.']
         skills = self.skills()
         if skills:
             L += ['', '## Apprentice skills', 'These are your own procedures. When one applies, read its SKILL.md and follow it.']
             L += [f'- **{n}**: {d} (`{p}`)' for n, d, p in skills]
+        if self.mode == 'auto':
+            L += ['', self.auto_instructions(cwd, session)]
         notes = []
         if self.private.exists() and not self.private_is_ignored():
             notes.append('WARNING: `private/` exists but is NOT gitignored, so private knowledge could be committed. Tell the user now (not later) and suggest adding `private/` to the apprentice\'s .gitignore.')
+        staged = self.staged()
+        if staged:
+            n = sum(k for p, fm, k in staged)
+            notes.append(f'{n} lesson(s) staged from {len(staged)} session(s), awaiting `/aipprentice:review`.')
         pend = self.pending()
         if pend:
             here = len(self.pending(cwd))
-            notes.append(f'{len(pend)} past session(s) ({here} from this project) have not been debriefed; the next `/aipprentice:debrief` will offer to process them.')
+            if self.mode == 'auto':
+                notes.append(f'{len(pend)} past session(s) ({here} from this project) ended with work that was never staged; `/aipprentice:review` will stage them first.')
+            else:
+                notes.append(f'{len(pend)} past session(s) ({here} from this project) have not been debriefed; the next `/aipprentice:debrief` will offer to process them.')
         inbox = self.inbox(cwd)
         if inbox:
-            notes.append(f'{len(inbox)} auto-memory entr{"y" if len(inbox) == 1 else "ies"} for this project not yet folded into the wiki; the next debrief will absorb them.')
+            nxt = 'the next staging or review' if self.mode == 'auto' else 'the next debrief'
+            notes.append(f'{len(inbox)} auto-memory entr{"y" if len(inbox) == 1 else "ies"} for this project not yet folded into the wiki; {nxt} will pick them up.')
         if notes:
             L += ['', '## Housekeeping (mention briefly once, at a natural point; don\'t lead with it if the user has a task)'] + [f'- {n}' for n in notes]
         return '\n'.join(L)
+
+    def auto_instructions(self, cwd, session):
+        """ How the main session triggers background staging in auto mode """
+        sid = session or '<session ID>'
+        mentor = frontmatter(self.page('APPRENTICE.md')).get('mentor') or 'the mentor'
+        base = f'Stage lessons for aipprentice {self.name}: read `{GUIDES / "staging.md"}` and follow it. Helper: `python3 {SCRIPT}`. Apprentice folder: `{self.path}`. Session: `{sid}`. Project: `{project_root(cwd)}`. Staged file: `{self.staged_file(sid)}`.'
+        return '\n'.join([
+            '## Learning mode: auto',
+            f'Lessons are captured by a background agent and filed only when {mentor} approves them in `/aipprentice:review`. Don\'t suggest `/aipprentice:debrief` ({mentor} can still run it).',
+            f'- **When to stage:** a substantial piece of work has reached a natural stopping point and {mentor} has reacted to it (a correction, explicit approval, or an explanation of how they want things done); the session looks about to end ("thanks", "that\'s all", wrapping up); or {mentor} asks you to save lessons. Not after trivial exchanges, at most once per piece of work, and never while an earlier staging agent is still running. Staging again later in the session is fine: the agent updates the same file.',
+            f'- **How:** without announcing it, launch the Agent tool with `subagent_type: "fork"`, description "Stage apprentice lessons", and this prompt: "{base} The conversation is in your own context." If forks aren\'t available, use `general-purpose` and replace that last sentence with "Read the conversation with `python3 {SCRIPT} condense {sid}`."',
+            '- **Afterwards:** the agent returns one line. If it staged anything, append that line in italics to the end of your next reply (e.g. "_Staged 2 lessons for review._"); if it staged nothing, say nothing. If it reports that it couldn\'t write the file, write its returned content to the staged file yourself.',
+        ])
 
 
 def scaffold(name, path, mentor):
@@ -456,17 +535,53 @@ def cmd_pending(args):
     a = Apprentice.get([x for x in args if not x.startswith('--')][0])
     rows = a.pending(os.getcwd() if here else None)
     if not rows:
-        print('No sessions awaiting debrief.')
+        print('No sessions awaiting debrief or staging.')
     for r in rows:
         p = Path(r['transcript_path'])
         title = title_of(p) if p.exists() else '(transcript missing)'
         print(f"{r['session_id']}  {r.get('ended', '')}  prompts={r.get('prompts')}  cwd={r.get('cwd')}  title={title}")
 
 
-def cmd_inbox(args):
+def cmd_mode(args):
     a = Apprentice.get(args[0])
-    items = a.inbox(os.getcwd())
-    print(f'Auto-memory dir: {auto_memory_dir(os.getcwd())}')
+    if len(args) < 2:
+        return print(a.mode)
+    if args[1] not in MODES:
+        sys.exit(f'Mode must be one of: {", ".join(MODES)}')
+    set_frontmatter(a.path / 'APPRENTICE.md', 'mode', args[1])
+    print(f'{a.name}: learning mode is now {args[1]} (takes effect on next activation).')
+
+
+def cmd_staged(args):
+    a = Apprentice.get(args[0])
+    staged = a.staged()
+    if not staged:
+        return print('Nothing staged.')
+    for p, fm, n in staged:
+        print(f"{p}  session={fm.get('session', p.stem)}  project={fm.get('project', '')}  staged={fm.get('staged', '')}  candidates={n}  summary={fm.get('summary', '')}")
+    print(f'{sum(n for p, fm, n in staged)} candidate(s) in {len(staged)} file(s).')
+
+
+def cmd_unstage(args):
+    a = Apprentice.get(args[0])
+    sids = args[1:]
+    reviewed = read_json(a.reviewed_file, {})
+    t = datetime.datetime.now().timestamp()
+    for sid in sids:
+        a.staged_file(sid).unlink(missing_ok=True)
+        reviewed[sid] = t
+    write_json(a.reviewed_file, reviewed)
+    if a.pending_file.exists():
+        remaining = [r for r in load_jsonl(a.pending_file) if r.get('session_id') not in sids]
+        a.pending_file.write_text(''.join(json.dumps(r) + '\n' for r in remaining))
+    print(f'Cleared {len(sids)} session(s); {len(a.staged())} staged file(s) and {len(a.pending())} pending session(s) remain.')
+
+
+def cmd_inbox(args):
+    cwd = pop_opt(args, '--cwd', os.getcwd())
+    a = Apprentice.get(args[0])
+    items = a.inbox(cwd)
+    print(f'Auto-memory dir: {auto_memory_dir(cwd)}')
     print('\n'.join(str(p) for p in items) if items else 'Inbox empty.')
 
 
@@ -751,7 +866,8 @@ def session_end():
     a = active_apprentice(sid)
     if not a or not path or sid in a.debriefed():
         return
-    n = sum(is_real_prompt(r) for r in iter_records(path))
+    since = a.captured_until(sid) # Only count prompts that came after the last staging or review
+    n = sum(is_real_prompt(r) and (iso_ts(r.get('timestamp')) or since + 1) > since for r in iter_records(path))
     if n < MIN_TURNS:
         return
     a.state.mkdir(parents=True, exist_ok=True)
@@ -768,6 +884,9 @@ COMMANDS = {
     'context': cmd_context,
     'pending': cmd_pending,
     'inbox': cmd_inbox,
+    'mode': cmd_mode,
+    'staged': cmd_staged,
+    'unstage': cmd_unstage,
     'absorbed': cmd_absorbed,
     'done': cmd_done,
     'journal': cmd_journal,
