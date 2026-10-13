@@ -34,7 +34,7 @@ A page covers one **topic**, not one fact. Prefer adding a bullet to an existing
 
   ```yaml
   ---
-  repo: /home/user/code/myproject   # project pages only: absolute path of the repo root
+  repo: /home/user/code/myproject   # project pages only: absolute path of the repo root (several, separated by commas, if the project spans repos)
   updated: 2026-09-25
   ---
   ```
@@ -69,7 +69,7 @@ Facts that aren't rules (a person's role, how a system is wired, a deadline) can
 
 ## Project pages
 
-`projects/<name>.md` holds everything specific to one repo: goals, current state, decisions and their reasons, conventions that override general preferences, and known gotchas. The `repo:` frontmatter lets the apprentice load the right page automatically when a session starts in that repo. Knowledge that applies beyond the project goes in `preferences/`, `domain/`, or `tools/`, and the project page links to it.
+`projects/<name>.md` holds everything specific to one repo (or to one project spread over several repos): goals, current state, decisions and their reasons, conventions that override general preferences, and known gotchas. The `repo:` frontmatter lets the apprentice load the right page automatically when a session starts in that repo; list several paths separated by commas if the project spans more than one. Knowledge that applies beyond the project goes in `preferences/`, `domain/`, or `tools/`, and the project page links to it.
 
 ## Skills
 

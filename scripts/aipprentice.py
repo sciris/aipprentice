@@ -208,17 +208,18 @@ class Apprentice:
         return p.read_text() if p.exists() else ''
 
     def project_page(self, cwd):
-        """ The projects/*.md page whose 'repo:' contains cwd, if any """
+        """ The projects/*.md page whose 'repo:' (one path, or several separated by commas) contains cwd, if any """
         root = Path(project_root(cwd)).resolve()
         best = None
         for p in sorted((self.path / 'projects').glob('*.md')):
-            repo = frontmatter(p.read_text()).get('repo')
-            if not repo:
-                continue
-            repo = Path(repo).expanduser().resolve()
-            if root == repo or repo in root.parents:
-                if best is None or len(str(repo)) > len(str(best[1])):
-                    best = (p, repo)
+            repos = frontmatter(p.read_text()).get('repo', '').split(',')
+            for repo in repos:
+                if not repo.strip():
+                    continue
+                repo = Path(repo.strip()).expanduser().resolve()
+                if root == repo or repo in root.parents:
+                    if best is None or len(str(repo)) > len(str(best[1])):
+                        best = (p, repo)
         return best[0] if best else None
 
     def skills(self):
