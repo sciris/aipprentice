@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "aipprentice marketplace: a Claude Code plugin that accumulates knowledge across sessions like a trainee employee.",
-    "version": "0.3.0"
+    "version": "0.3.1"
   },
   "plugins": [
     {

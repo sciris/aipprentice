@@ -1,6 +1,6 @@
 {
   "name": "aipprentice",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "An apprentice that learns from working with you: lessons staged in the background (or end-of-session debriefs), reviewed into a cross-project knowledge base, and periodic reflection that consolidates lessons and graduates repeated workflows into skills",
   "author": {
     "name": "Cliff Kerr",
