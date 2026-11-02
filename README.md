@@ -66,6 +66,7 @@ Each apprentice has a learning mode, set by `mode:` in `APPRENTICE.md` (`auto` i
 - **Manual mode.** Nothing is staged; you run a debrief at the end of a session instead.
 - **Debrief** extracts corrections, confirmed approaches, preferences, domain facts, procedures, and its own mistakes. It also folds in the project's auto-memory notes (the "inbox"), and ends with a few questions for you about things it couldn't interpret.
 - **Automatic backlog**: when an activated session ends with ≥3 prompts that were never staged or debriefed, a hook queues it. The next activation mentions it, and the next review (auto) or debrief (manual) processes it from the saved transcript.
+- **Session titles**: Claude Code would name every activated session after the activation command, so the plugin keeps a short title instead, starting with the repo's folder (`ssv4: rust kernel speedup`). A background check with a small model decides it, and a change shows up one prompt later. While a session is on housekeeping, every prompt is checked and the title moves to the main work at once. After that, checks are every 6 prompts (3 after a long prompt), and two in a row have to agree the work has moved. Renaming a session by hand stops all this for that session.
 - **Reflect** is the periodic review that keeps the wiki coherent.
 
 The rules for what's worth keeping and where it goes are shared by all three, in [`guides/lessons.md`](guides/lessons.md); the background stager follows [`guides/staging.md`](guides/staging.md).
