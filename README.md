@@ -7,19 +7,19 @@ Apprentices are **opt-in per session**. Nothing loads, and nothing is recorded, 
 ## Quick start
 
 ```bash
-claude plugin marketplace add /home/cliffk/idm/aipprentice
+claude plugin marketplace add https://github.com/sciris/aipprentice
 claude plugin install aipprentice@aipprentice
 ```
 
 Restart Claude Code. Then, in any session:
 
 ```
-/aipprentice cliff-ai          # activate (or create) the apprentice named cliff-ai
+/aipprentice my-ai             # activate (or create) the apprentice named my-ai
 ... work as usual; lessons are staged in the background ...
 /aipprentice:review            # every so often: approve what it staged, and it files the lessons
 ```
 
-The first time you use a name, it asks for a folder, e.g. `/home/cliffk/idm/idm-aipprentices/cliff-ai`, and creates the apprentice there. After that, the name alone is enough. If the short form `/aipprentice` doesn't resolve, use `/aipprentice:aipprentice cliff-ai`.
+The first time you use a name, it asks for a folder, e.g. `~/apprentices/my-ai`, and creates the apprentice there. After that, the name alone is enough. If the short form `/aipprentice` doesn't resolve, use `/aipprentice:aipprentice my-ai`.
 
 ## Commands
 
@@ -36,7 +36,7 @@ The first time you use a name, it asks for a folder, e.g. `/home/cliffk/idm/idm-
 The structure is specified in [`template/WIKI.md`](template/WIKI.md), which is copied into each apprentice. Edit that copy to change the conventions for that apprentice.
 
 ```
-cliff-ai/
+my-ai/
   APPRENTICE.md   # identity and role (you edit this)
   WIKI.md         # conventions: layout, page and lesson format, linking
   Home.md         # index of every page; loaded on activation
@@ -49,7 +49,7 @@ cliff-ai/
 Pages are organized by topic and use `[[wikilinks]]`, so the folder opens directly as an Obsidian vault. Each lesson is a bullet with its rule, its reason, and where it came from:
 
 ```markdown
-- Diagnose and report the root cause before changing code; fix only once asked. *Why:* the mentor usually knows a better fix. (2026-08-14, starsim)
+- Diagnose and report the root cause before changing code; fix only once asked. *Why:* the mentor usually knows a better fix. (2026-08-14, myproject)
 ```
 
 Put the folder in git. The apprentice never commits, so `git diff` shows exactly what it learned, and you review and commit it yourself.
@@ -58,7 +58,7 @@ Put the folder in git. The apprentice never commits, so `git diff` shows exactly
 
 ## How learning works
 
-Each apprentice has a learning mode, set by `mode:` in `APPRENTICE.md` (`auto` if absent). Change it with `aipprentice.py mode NAME manual` (or `auto`), or by editing the file.
+Each apprentice has a learning mode, set by `mode:` in `APPRENTICE.md` (`auto` if absent). Change it with `python3 scripts/aipprentice.py mode NAME manual` (run from the plugin folder) (or `auto`), or by editing the file.
 
 - **During the session**, the apprentice applies its wiki, and Claude Code's built-in auto memory keeps saving notes as usual.
 - **Auto mode (default).** At natural stopping points (a piece of work done and reacted to, or the session wrapping up), the apprentice quietly launches a background subagent (a fork of the session, so it sees the whole conversation). The subagent applies the keep test and writes candidate lessons, plus any new auto-memory notes, to `.state/staged/<session>.md`. It never touches the wiki, and staging again later in the session updates the same file. You'll see at most a one-line note like "_Staged 2 lessons for review._"
@@ -66,7 +66,7 @@ Each apprentice has a learning mode, set by `mode:` in `APPRENTICE.md` (`auto` i
 - **Manual mode.** Nothing is staged; you run a debrief at the end of a session instead.
 - **Debrief** extracts corrections, confirmed approaches, preferences, domain facts, procedures, and its own mistakes. It also folds in the project's auto-memory notes (the "inbox"), and ends with a few questions for you about things it couldn't interpret.
 - **Automatic backlog**: when an activated session ends with ≥3 prompts that were never staged or debriefed, a hook queues it. The next activation mentions it, and the next review (auto) or debrief (manual) processes it from the saved transcript.
-- **Session titles**: Claude Code would name every activated session after the activation command, so the plugin keeps a short title instead, starting with the repo's folder (`ssv4: rust kernel speedup`). A background check with a small model decides it, and a change shows up one prompt later. While a session is on housekeeping, every prompt is checked and the title moves to the main work at once. After that, checks are every 6 prompts (3 after a long prompt), and two in a row have to agree the work has moved. Renaming a session by hand stops all this for that session.
+- **Session titles**: Claude Code would name every activated session after the activation command, so the plugin keeps a short title instead, starting with the repo's folder (`myrepo: speed up the parser`). A background check with a small model decides it, and a change shows up one prompt later. While a session is on housekeeping, every prompt is checked and the title moves to the main work at once. After that, checks are every 6 prompts (3 after a long prompt), and two in a row have to agree the work has moved. Renaming a session by hand stops all this for that session.
 - **Reflect** is the periodic review that keeps the wiki coherent.
 
 The rules for what's worth keeping and where it goes are shared by all three, in [`guides/lessons.md`](guides/lessons.md); the background stager follows [`guides/staging.md`](guides/staging.md).
@@ -90,7 +90,7 @@ In auto mode, everything goes through review. In a debrief, small changes are wr
 
 ## Housekeeping state
 
-Kept in `~/.claude/aipprentice/`: `registry.json` (name → folder), `aliases.json` (alias → name, e.g. `ai` → `cliff-ai`; add one with `/aipprentice alias cliff-ai ai`), and `active.json` (which sessions activated which apprentice). The debrief queue and staged lessons are stored in each apprentice's `.state/`. Environment overrides: `AIPPRENTICE_HOME` (state location) and `AIPPRENTICE_MIN_TURNS` (queue threshold, default 3).
+Kept in `~/.claude/aipprentice/`: `registry.json` (name → folder), `aliases.json` (alias → name, e.g. `ai` → `my-ai`; add one with `/aipprentice alias my-ai ai`), and `active.json` (which sessions activated which apprentice). The debrief queue and staged lessons are stored in each apprentice's `.state/`. Environment overrides: `AIPPRENTICE_HOME` (state location) and `AIPPRENTICE_MIN_TURNS` (queue threshold, default 3).
 
 ## Notes
 

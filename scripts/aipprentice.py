@@ -11,7 +11,7 @@ Usage:
     aipprentice.py activate NAME [--path DIR] [--create] [--session ID] [--mentor NAME]
                                                           # register (and with --create, scaffold) if needed (NAME: what to call the user), mark session active, print context
     aipprentice.py relink NAME DIR                        # point a registered apprentice at its new folder
-    aipprentice.py alias NAME ALIAS                       # let ALIAS stand for NAME (e.g. "ai" for "cliff-ai")
+    aipprentice.py alias NAME ALIAS                       # let ALIAS stand for NAME (e.g. "ai" for "my-ai")
     aipprentice.py unalias ALIAS                          # remove an alias
     aipprentice.py forget NAME                            # remove an apprentice from the registry (folder untouched)
     aipprentice.py context NAME                           # print the context bundle without activating
@@ -396,7 +396,7 @@ def missing_notes(reg):
 
 
 def partial_matches(name, reg):
-    """ Registered names that contain `name` as whole hyphen-separated words, e.g. "ai" -> "cliff-ai" (suggestions only) """
+    """ Registered names that contain `name` as whole hyphen-separated words, e.g. "ai" -> "my-ai" (suggestions only) """
     words = name.split('-')
     n = len(words)
     matches = []
@@ -990,7 +990,7 @@ def cmd_retitle(args):
     if not state:
         return
     custom = custom_title_of(transcript) if transcript and Path(transcript).exists() else None
-    if custom and custom not in state['past']: # Cliff renamed the session, so it's his from now on
+    if custom and custom not in state['past']: # the user renamed the session, so it's theirs from now on
         result = dict(manual=True)
     else:
         prompts = '\n\n'.join(f'[{i + 1}] {p}' for i, p in enumerate(state['prompts']))

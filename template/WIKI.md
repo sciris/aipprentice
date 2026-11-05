@@ -46,7 +46,7 @@ A page covers one **topic**, not one fact. Prefer adding a bullet to an existing
 Most content consists of **lessons**: bullets that tell the apprentice what to do, with the reason and where it came from.
 
 ```markdown
-- Diagnose and report the root cause before changing any code; fix only once asked. *Why:* the mentor usually knows a better fix than the obvious one. (2026-08-14, starsim)
+- Diagnose and report the root cause before changing any code; fix only once asked. *Why:* the mentor usually knows a better fix than the obvious one. (2026-08-14, myproject)
 ```
 
 - **Rule first**, stated so it can be acted on.
@@ -77,11 +77,11 @@ A skill is a repeatable procedure with several steps that the mentor has taught 
 
 ```markdown
 ---
-name: release-starsim
-description: Steps to cut a Starsim release — when to use it, in trigger-rich wording
+name: release-myproject
+description: Steps to cut a myproject release — when to use it, in trigger-rich wording
 ---
 
-# Release Starsim
+# Release myproject
 1. ...
 ```
 
@@ -89,7 +89,7 @@ While the apprentice is active, it treats these as its own skills: it knows thei
 
 ## Journal
 
-`journal/YYYY-MM.md` has one bullet per debrief, review, or reflection: `- 2026-09-25 (starsim): refactored time units; learned: X, Y; skill candidates: Z`. It's a record of the work done, and reflection draws on it to spot recurring patterns.
+`journal/YYYY-MM.md` has one bullet per debrief, review, or reflection: `- 2026-09-25 (myproject): refactored time units; learned: X, Y; skill candidates: Z`. It's a record of the work done, and reflection draws on it to spot recurring patterns.
 
 ## Private knowledge
 
@@ -101,7 +101,7 @@ While the apprentice is active, it treats these as its own skills: it knows thei
 
 ## Sensitive data
 
-- **Never store credentials** anywhere, including `private/`: API keys, tokens, passwords, private keys, connection strings. Record *where* a secret lives and how to get it instead ("the Azure key is in Key Vault `idm-kv`, secret `storage-key`").
+- **Never store credentials** anywhere, including `private/`: API keys, tokens, passwords, private keys, connection strings. Record *where* a secret lives and how to get it instead ("the Azure key is in Key Vault `team-kv`, secret `storage-key`").
 - **Personal data** about anyone other than the mentor goes in `private/` or nowhere. This includes contact details, health, HR or performance matters, and personal opinions about people.
 - **A guard hook** checks every write into this folder. If it sees something that looks like a credential (anywhere) or personal data such as an email address (outside `private/`), it stops and asks the mentor to confirm. If `private/` isn't gitignored, writes to it also require confirmation. False positives can be allowed permanently by adding the exact string to `.scanignore`.
 - The guard matches patterns, so it is a backstop and doesn't replace judgment. It can't recognize a confidential fact written in plain prose. The rules above still apply.

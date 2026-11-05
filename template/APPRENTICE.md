@@ -11,7 +11,7 @@ An apprentice to {{mentor}}. Edit this page to set its scope and character. The 
 
 ## Role
 
-What this apprentice is for, e.g. "research software engineering on Starsim and related IDM disease models", or "drafting and reviewing grant documents".
+What this apprentice is for, e.g. "research software engineering on a scientific Python library", or "drafting and reviewing grant documents".
 
 ## How to behave
 
