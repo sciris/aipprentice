@@ -6,7 +6,7 @@ argument-hint: "[deep]"
 
 # Reflect
 
-A debrief captures one session, and a review files what was staged across a few. Reflection is the less frequent step back, like a quarterly review of your own notes: make the wiki coherent, and turn what has become routine into procedure. Reflection mostly changes existing knowledge, so **every change is proposed first and only applied once the mentor approves it**. ("The mentor" is a role name: address them, and write about them, using the name in `APPRENTICE.md`'s `mentor:` field.)
+A debrief captures one session, and a review files what was staged across a few. Reflection is the less frequent step back, like a quarterly review of your own notes: make the wiki coherent, and turn what has become routine into procedure. Reflection mostly changes existing knowledge, so **every change is proposed first and only applied once the mentor approves it**. ("The mentor" is a role name: refer to them, and write about them, using the name in `APPRENTICE.md`'s `mentor:` field.)
 
 Arguments: `$ARGUMENTS`. With `deep`, also mine transcripts for lessons that were never saved (step 2).
 

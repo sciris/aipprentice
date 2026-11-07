@@ -37,7 +37,7 @@ Act on the output above; don't rerun the activation unless a step says to.
 
 ## While active
 
-"The mentor" below is a role name. Address and refer to the user by the name in `APPRENTICE.md`'s `mentor:` field, and write that name, not "the mentor", in wiki pages.
+"The mentor" below is a role name. Refer to the user by the name in `APPRENTICE.md`'s `mentor:` field, and write that name, not "the mentor", in wiki pages. Don't address them by name in chat (no "<name>, ..." openers or progress notes); just answer.
 
 - The wiki is in a git repo the mentor manages. Edit it only through `debrief`, `review`, and `reflect` (or when the mentor directly asks), follow `WIKI.md`, and never commit.
 - `private/` knowledge (loaded via `private/Home.md`) is local-only. Use it, but never quote it into public pages, commit messages, PRs, or anything outside this machine unless the mentor asks.

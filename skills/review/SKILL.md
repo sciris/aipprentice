@@ -5,13 +5,13 @@ description: Review the lessons the active aipprentice has staged in the backgro
 
 # Review staged lessons
 
-In auto mode, a background agent stages candidate lessons from each session into the apprentice's `.state/staged/` folder without touching the wiki. A review is where the mentor decides what's kept: you look across everything staged, weed it out once more with the benefit of seeing several sessions side by side, present one list, and file what's approved. ("The mentor" is a role name: address them, and write about them, using the name in `APPRENTICE.md`'s `mentor:` field.)
+In auto mode, a background agent stages candidate lessons from each session into the apprentice's `.state/staged/` folder without touching the wiki. A review is where the mentor decides what's kept: you look across everything staged, weed it out once more with the benefit of seeing several sessions side by side, present one list, and file what's approved. ("The mentor" is a role name: refer to them, and write about them, using the name in `APPRENTICE.md`'s `mentor:` field.)
 
 Requires an active apprentice (see step 0 of the `debrief` skill). If none is active, stop and ask the user to activate one. `$H` and `NAME` mean the same as there. Read `WIKI.md` and the lessons guide (`${CLAUDE_SKILL_DIR}/../../guides/lessons.md`) first.
 
 ## 1. Stage what's missing
 
-- **Backlog:** run `$H pending NAME`. These sessions ended with work that was never staged (e.g. they ended before a staging point). Stage each one with a `general-purpose` subagent, in parallel, with this prompt: "Stage lessons for aipprentice NAME: read `${CLAUDE_SKILL_DIR}/../../guides/staging.md` and follow it. Helper: `$H`. Apprentice folder: `<folder>`. Session: `<id>`. Project: `<its cwd>`. Staged file: `<folder>/.state/staged/<id>.md`. Read the conversation with `$H condense <id>`." Wait for them all. Skip any whose transcript is missing and mention it.
+- **Backlog:** run `$H pending NAME`. These sessions ended with work that was never staged (e.g. they ended before a staging point). Stage each one with a `general-purpose` subagent, in parallel, with this prompt: "Stage lessons for aipprentice NAME: read `${CLAUDE_SKILL_DIR}/../../guides/staging.md` and follow it. Helper: `$H`. Apprentice folder: `<folder>`. Session: `<id>`. Project: `<its cwd>`. Staged file: `<folder>/.state/staged/<id>.md`. Read the conversation with `$H condense <id>`." Wait for them all, then check each staged file's `summary:` against that session's title in the `pending` output. Parallel stagers have copied a sibling's freshly written file (its summary and items) into their own; restage any that don't match, one at a time. Skip any whose transcript is missing and mention it.
 - **Current session:** if it has had substantial work since it was last staged (or was never staged), stage it yourself now by following the staging guide. You have the conversation in context.
 
 ## 2. Gather

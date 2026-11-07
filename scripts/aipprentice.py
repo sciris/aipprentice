@@ -301,9 +301,9 @@ class Apprentice:
         """ Everything the model needs on activation """
         mentor = frontmatter(self.page('APPRENTICE.md')).get('mentor')
         if mentor:
-            who = f'You work for **{mentor}**. Call them "{mentor}" when talking to them and in everything you write to the wiki. The skills say "the mentor" only as a role name; never use that phrase with them unless it is their chosen name.'
+            who = f'You work for **{mentor}**. Use "{mentor}" when referring to them, e.g. in the wiki and in notes for others, but do not address them by name in chat (no "{mentor}, ..." openers, progress notes or asides); just answer. Carry this rule into any compaction summary. The skills say "the mentor" only as a role name; never use that phrase with them unless it is their chosen name.'
         else:
-            who = 'APPRENTICE.md has no `mentor:` field. Early on, ask the user what they\'d like to be called (offer their name if you know it, e.g. from `git config user.name`, as the default), then add `mentor: <that>` to its frontmatter. Until then, address them by name if known, not as "the mentor".'
+            who = 'APPRENTICE.md has no `mentor:` field. Early on, ask the user what they\'d like to be called (offer their name if you know it, e.g. from `git config user.name`, as the default), then add `mentor: <that>` to its frontmatter. Until then, refer to them by name if known, not as "the mentor", and do not address them by name in chat.'
         L = [
             f'# aipprentice: "{self.name}" is active for this session',
             f'Folder: `{self.path}`. Helper: `python3 {SCRIPT}` (pass `{self.name}` as the apprentice name).' + (f' Session: `{session}`.' if session else ''),

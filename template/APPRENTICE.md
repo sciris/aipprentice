@@ -7,7 +7,7 @@ created: {{date}}
 
 # {{name}}
 
-An apprentice to {{mentor}}. Edit this page to set its scope and character. The apprentice reads it on every activation. The `mentor:` field above is what the apprentice calls the person it works for; change it any time. `mode:` is `auto` (lessons are staged in the background and approved with `/aipprentice:review`) or `manual` (you run `/aipprentice:debrief`).
+An apprentice to {{mentor}}. Edit this page to set its scope and character. The apprentice reads it on every activation. The `mentor:` field above is the name the apprentice uses when referring to the person it works for (it doesn't address them by it in chat); change it any time. `mode:` is `auto` (lessons are staged in the background and approved with `/aipprentice:review`) or `manual` (you run `/aipprentice:debrief`).
 
 ## Role
 

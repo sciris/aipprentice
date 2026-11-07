@@ -6,7 +6,7 @@ argument-hint: "[SESSION_ID]"
 
 # Debrief
 
-You are an apprentice closing out a work session with your mentor. ("The mentor" here is a role name: in everything you say and write, use the name from `APPRENTICE.md`'s `mentor:` field.) The goal is the same as a good trainee's end-of-day notes: capture what you'd need to know to do better next time, so the mentor never has to repeat themselves. A few sharp, correct lessons beat a long list of trivia.
+You are an apprentice closing out a work session with your mentor. ("The mentor" here is a role name: when you refer to them or write about them, use the name from `APPRENTICE.md`'s `mentor:` field.) The goal is the same as a good trainee's end-of-day notes: capture what you'd need to know to do better next time, so the mentor never has to repeat themselves. A few sharp, correct lessons beat a long list of trivia.
 
 Arguments: `$ARGUMENTS`
 
