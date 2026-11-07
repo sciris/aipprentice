@@ -13,7 +13,7 @@ Your prompt gives the helper command (`$H` below), the apprentice name (`NAME`),
 ## 2. Extract
 
 - Go through the session per the lessons guide. If you're updating a staged file, focus on the conversation since it was written, but correct earlier entries if the mentor has since contradicted them.
-- For each surviving candidate, search the wiki (`grep -ril <keyword> <folder>`). Drop it if the wiki already says it. If it changes an existing lesson, stage it as an `update` naming the page and quoting the start of the old lesson.
+- For each surviving candidate, search the wiki (`grep -ril <keyword> <folder>`). Drop it if the wiki already says it. If it changes an existing lesson, stage it as an `update` naming the page and quoting the start of the old lesson, and write the **whole rewritten lesson**, about as long as the old one, never an "append: …" (see "Keep it small" in the lessons guide). End every candidate with its digest line: ` Digest: <the rule in at most ~150 characters>`.
 - **Auto-memory:** run `$H inbox NAME --cwd <project>`. Treat each listed file as a candidate with the same filtering (auto memory saves liberally, so many won't pass). Skip files another staged file already lists.
 - Never write a credential's value. For sensitive candidates (colleagues, confidential work, personal matters), mark them `⚠ sensitive`, suggest a `private/` target, and keep the detail to what the mentor needs in order to decide.
 

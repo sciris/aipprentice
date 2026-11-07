@@ -14,7 +14,7 @@ Requires an active apprentice (see step 0 of the `debrief` skill). If none is ac
 
 ## 1. Take inventory
 
-Read without editing: every wiki page (including `private/`), `skills/*/SKILL.md`, and the recent journal pages. Also read the auto-memory inbox for each project that has a project page (`$H inbox NAME`, run from that repo, or read `~/.claude/projects/<key>/memory/` directly), plus `~/.claude/CLAUDE.md` and `~/.claude/skills/`, so you don't duplicate what's already a firm rule or an installed skill. If the wiki is large, have subagents summarize sections in parallel.
+Run `$H lint NAME` for pages over budget, missing digests and overlong lessons. Read without editing: every wiki page (including `private/`), `skills/*/SKILL.md`, and the recent journal pages. Also read the auto-memory inbox for each project that has a project page (`$H inbox NAME`, run from that repo, or read `~/.claude/projects/<key>/memory/` directly), plus `~/.claude/CLAUDE.md` and `~/.claude/skills/`, so you don't duplicate what's already a firm rule or an installed skill. If the wiki is large, have subagents summarize sections in parallel.
 
 ## 2. (deep only) Mine unsaved lessons
 
@@ -24,11 +24,11 @@ Run `$H pending NAME` and process those sessions with `$H condense <id>`, fannin
 
 - **Promote**: the same lesson appears on several project pages, or a project-page lesson is really about the mentor. Propose moving it to the right general page and linking back.
 - **Prune**: lessons that fail the keep test in the lessons guide (`${CLAUDE_SKILL_DIR}/../../guides/lessons.md`). That means one-off design decisions, task status, things now recorded in code, single-occurrence preferences that never recurred, and lessons whose rule only makes sense in the task it came from (rewrite these at the general level if something general survives; otherwise delete). This is usually the highest-value cleanup. Propose deleting them in one batch.
-- **Merge / split**: near-duplicate lessons, overlapping pages, or pages past ~150 lines.
+- **Merge / split**: near-duplicate lessons, overlapping pages, pages over budget (`$H lint`), and lessons that have grown appended sub-lessons (several *Why:*s and dates in one bullet): split them into separate lessons or tighten them.
 - **Contradict**: lessons that disagree. Propose a resolution, or ask which one is current.
 - **Stale**: lessons that name files, functions, flags, branches, people's roles, or deadlines. Spot-check that these still exist or still apply.
 - **Sharpen**: lessons with no actionable rule, or with `*Why:* unknown`. Propose a rewrite, or ask for the reason.
-- **Structure**: pages missing from `Home.md`, a `Home.md` that has grown past ~60 lines, broken or missing `[[links]]`, and pages in the wrong folder under `WIKI.md`.
+- **Structure**: pages without a `## Rules` digest or whose digest is out of sync with their lessons, pages missing from `Home.md`, a `Home.md` that has grown past ~60 lines, broken or missing `[[links]]`, and pages in the wrong folder under `WIKI.md`.
 - **Graduate to a skill**: skill candidates from the journal, and procedures that recur across pages or sessions. Draft `skills/<name>/SKILL.md` in the format given in `WIKI.md`, with a trigger-rich `description`. Link it from the pages it relates to, and remove the procedure text it replaces.
 - **Elevate**: a firm, frequently relevant rule might also belong in a repo's `CLAUDE.md` or in `~/.claude/CLAUDE.md`, or a skill might be worth making always-on in `~/.claude/skills/`. Suggest these only; the mentor maintains those locations.
 - **Sensitive**: run `$H scan NAME`, and also read for sensitive prose the scanner can't catch. Propose moving it to `private/`, generalizing it, or deleting it. Check that no public page links to or names a private page.
@@ -40,4 +40,4 @@ Give one report, grouped by the categories above and numbered throughout. Each i
 
 ## 5. Apply what's approved
 
-Edit according to `WIKI.md`, and keep `Home.md` in sync. Re-read a page before rewriting or deleting it. Finish with `$H journal NAME "reflection: <what changed>"` and a short summary of what changed and what was deferred. Point out that everything can be reviewed with `git diff` in the apprentice folder. Never commit.
+Edit according to `WIKI.md`, and keep `Home.md` and every page's digest in sync. Re-read a page before rewriting or deleting it. Run `$H lint NAME` until it's clean, or explain what's left. Then run `$H reflected NAME`, which records the wiki's size so activation can suggest the next reflection once it has grown. Finish with `$H journal NAME "reflection: <what changed>"` and a short summary of what changed and what was deferred. Point out that everything can be reviewed with `git diff` in the apprentice folder. Never commit.

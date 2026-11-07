@@ -23,6 +23,7 @@ Run `$H staged NAME` and read every file it lists. Then, across all of them:
 - **Contradictions:** a candidate that conflicts with an existing lesson, or with another candidate. Propose which one is current, or ask.
 - **Rescue:** skim the `Not saved` sections. If an item recurs across sessions, it has now earned a place: promote it to a candidate.
 - **Auto-memory:** collect the files listed under `Auto-memory`, plus anything `$H inbox NAME` still lists for this project.
+- **Size:** run `$H lint NAME`. Updates must be rewrites at about the old length, not appends: rewrite any staged "append" as a full lesson, or make it its own bullet. For each target page that is over budget, include a proposed trim or split of that page beside its additions (see "Keep it small" in the lessons guide). If lint reports many problems, say that it's time for `/aipprentice:reflect`.
 
 ## 3. Propose
 
@@ -36,7 +37,7 @@ If nothing survives, say so in one line and skip to step 5. Zero is a normal out
 
 ## 4. Apply
 
-File what's approved in the lesson format from `WIKI.md`, and keep `Home.md` in sync (and `private/Home.md` for private pages). Re-read a page before editing an existing lesson. If the guard hook asks the mentor to confirm a write, don't try to get around it.
+File what's approved in the lesson format from `WIKI.md`, with each lesson's line in the page's `## Rules` digest, and keep `Home.md` in sync (and `private/Home.md` for private pages). Run `$H lint NAME` afterwards and fix anything you introduced. Re-read a page before editing an existing lesson. If the guard hook asks the mentor to confirm a write, don't try to get around it.
 
 ## 5. Close out
 

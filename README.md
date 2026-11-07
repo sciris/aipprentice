@@ -52,6 +52,8 @@ Pages are organized by topic and use `[[wikilinks]]`, so the folder opens direct
 - Diagnose and report the root cause before changing code; fix only once asked. *Why:* the mentor usually knows a better fix. (2026-08-14, myproject)
 ```
 
+To keep the wiki cheap to read, every page with several lessons opens with a `## Rules` digest (one short line per lesson), and activation loads only the digest of the current project's pages. Pages have a budget of about 20 KB. `aipprentice.py lint NAME` reports pages over budget, missing digests and overlong lessons, and activation suggests `/aipprentice:reflect` when lint finds problems or the wiki has grown by a quarter since the last reflection.
+
 Put the folder in git. The apprentice never commits, so `git diff` shows exactly what it learned, and you review and commit it yourself.
 
 **Skills** in `skills/` use the standard Claude Code format. They're available only while their apprentice is active (it reads them itself when relevant). To make one always available, symlink it into `~/.claude/skills/`.

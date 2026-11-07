@@ -26,6 +26,8 @@ Usage:
     aipprentice.py condense PATH_OR_SESSION_ID            # print a transcript as compact dialogue
     aipprentice.py paths NAME                             # print locations
     aipprentice.py scan NAME [FILE ...]                   # check for secrets / personal data; exit 1 if found
+    aipprentice.py lint NAME                              # pages over budget, missing digests, overlong lessons
+    aipprentice.py reflected NAME                         # record the wiki's size after a reflection
     aipprentice.py session-start | session-end | prompt-submit | pre-write  # hook entry points (read hook JSON on stdin)
     aipprentice.py retitle SESSION_ID TRANSCRIPT          # background: ask a small model what the session is about
 
@@ -55,6 +57,10 @@ MODES = ('auto', 'manual')
 
 MIN_TURNS = int(os.environ.get('AIPPRENTICE_MIN_TURNS', 3)) # Sessions with fewer real user prompts aren't queued
 MAX_PAGE_CHARS = 8000 # Cap on each page injected into context
+PAGE_BUDGET = 20000 # Characters; past this a page should be trimmed or split
+DIGEST_LINE_CHARS = 160 # Longest line in a page's ## Rules digest
+LESSON_CHARS = 600 # A lesson longer than this has usually grown appended sub-lessons
+GROWTH_NUDGE = 0.25 # Suggest reflecting once the wiki has grown this much since the last reflection
 ACTIVE_TTL_DAYS = 90 # Forget session activations older than this
 TITLES = STATE / 'titles' # One state file per activated session, plus the latest check's result
 TITLE_MODEL = 'haiku'
@@ -118,6 +124,16 @@ def load_jsonl(path):
 def capped(text, n=MAX_PAGE_CHARS):
     text = text.strip()
     return text if len(text) <= n else text[:n] + '\n... (truncated; this page should be split or trimmed)'
+
+
+def digest(text):
+    """ A page's intro and its '## Rules' digest (everything up to the next ## heading), or None if it has no digest """
+    body = re.sub(r'^---\n.*?\n---\n', '', text, flags=re.S).strip()
+    m = re.search(r'^## Rules[ \t]*$', body, re.M)
+    if not m:
+        return None
+    n = re.search(r'^## ', body[m.end():], re.M)
+    return (body[:m.end() + n.start()] if n else body).strip()
 
 
 def pop_opt(args, flag, default=None):
@@ -230,6 +246,45 @@ class Apprentice:
         p = self.path / rel
         return p.read_text() if p.exists() else ''
 
+    def wiki_pages(self):
+        """ Topic pages that hold lessons (not the index, conventions, journal or skills) """
+        skip = {'Home.md', 'WIKI.md', 'APPRENTICE.md'}
+        out = []
+        for p in sorted(self.path.rglob('*.md')):
+            parts = p.relative_to(self.path).parts
+            if {'.git', '.state', 'journal', 'skills'} & set(parts) or parts[-1] in skip and len(parts) <= 2:
+                continue
+            out.append(p)
+        return out
+
+    def wiki_size(self):
+        return sum(len(p.read_text()) for p in self.wiki_pages())
+
+    def lint(self):
+        """ Size and structure problems, one string each """
+        out = []
+        for p in self.wiki_pages():
+            text, rel = p.read_text(), p.relative_to(self.path)
+            lessons = [l for l in text.splitlines() if l.startswith('- ')]
+            if len(text) > PAGE_BUDGET:
+                out.append(f'{rel}: {len(text) // 1000} KB, over the {PAGE_BUDGET // 1000} KB budget; trim or split it')
+            d = digest(text)
+            if d is None:
+                if len(lessons) >= 3:
+                    out.append(f'{rel}: no `## Rules` digest')
+            else:
+                long = [l for l in d.splitlines() if l.startswith('- ') and len(l) > DIGEST_LINE_CHARS]
+                if long:
+                    out.append(f'{rel}: {len(long)} digest line(s) over {DIGEST_LINE_CHARS} characters')
+            long = [l for l in lessons if len(l) > LESSON_CHARS]
+            if long:
+                out.append(f'{rel}: {len(long)} lesson(s) over {LESSON_CHARS} characters (split or tighten)')
+        return out
+
+    @property
+    def reflected_file(self):
+        return self.state / 'reflected.json'
+
     def project_page(self, cwd):
         """ The projects/*.md page whose 'repo:' (one path, or several separated by commas) contains cwd, if any """
         root = Path(project_root(cwd)).resolve()
@@ -307,7 +362,7 @@ class Apprentice:
         L = [
             f'# aipprentice: "{self.name}" is active for this session',
             f'Folder: `{self.path}`. Helper: `python3 {SCRIPT}` (pass `{self.name}` as the apprentice name).' + (f' Session: `{session}`.' if session else ''),
-            f'You are this apprentice. Its knowledge lives in the wiki in that folder, organized per `WIKI.md`. Read `WIKI.md` before creating or restructuring any page. Consult wiki pages when relevant to the task (Home.md lists them all). Learning mode: **{self.mode}**. '
+            f'You are this apprentice. Its knowledge lives in the wiki in that folder, organized per `WIKI.md`. Read `WIKI.md` before creating or restructuring any page. Consult wiki pages when relevant to the task: read the `## Rules` digest of a page first, then only the sections whose rules apply (Home.md lists every page). Learning mode: **{self.mode}**. '
             + ('Lessons are staged in the background (see "Learning mode: auto" below); `/aipprentice:review` files them and `/aipprentice:reflect` consolidates.' if self.mode == 'auto' else 'Use `/aipprentice:debrief` to capture lessons and `/aipprentice:reflect` to consolidate.'),
             who, '', '## APPRENTICE.md', capped(self.page('APPRENTICE.md')) or '(missing)',
             '', '## Home.md', capped(self.page('Home.md')) or '(missing)',
@@ -316,7 +371,13 @@ class Apprentice:
             L += ['', '## private/Home.md (local only, gitignored: never copy its content or page names into public pages)', capped(self.page('private/Home.md'))]
         pp = self.project_page(cwd)
         if pp:
-            L += ['', f'## Project page: {pp.relative_to(self.path)}', capped(pp.read_text())]
+            related = sorted(pp.parent.glob(f'{pp.stem}-*.md'))
+            for q in [pp] + related:
+                d = digest(q.read_text())
+                if d is None:
+                    L += ['', f'## Project page: {q.relative_to(self.path)} (no digest; this page needs a `## Rules` section)', capped(q.read_text())]
+                else:
+                    L += ['', f'## Project page: {q.relative_to(self.path)} (digest only: read the file for the full lessons below it)', capped(d)]
         else:
             L += ['', f'## Project page', f'None yet for `{project_root(cwd)}`. A debrief or review will create `projects/<name>.md` with `repo:` frontmatter if there is anything worth recording.']
         skills = self.skills()
@@ -339,6 +400,17 @@ class Apprentice:
                 notes.append(f'{len(pend)} past session(s) ({here} from this project) ended with work that was never staged; `/aipprentice:review` will stage them first.')
             else:
                 notes.append(f'{len(pend)} past session(s) ({here} from this project) have not been debriefed; the next `/aipprentice:debrief` will offer to process them.')
+        problems = self.lint()
+        last = read_json(self.reflected_file, {})
+        size = self.wiki_size()
+        grown = last.get('size') and size > (1 + GROWTH_NUDGE) * last['size']
+        if problems or grown:
+            why = []
+            if problems:
+                why.append(f'{len(problems)} size or structure problem(s) (`$H lint {self.name}`)')
+            if grown:
+                why.append(f'the wiki has grown {100 * (size - last["size"]) // last["size"]}% since the last reflection ({last.get("date")})')
+            notes.append('Time to run `/aipprentice:reflect`: ' + ' and '.join(why).replace('$H', f'python3 {SCRIPT}') + '.')
         inbox = self.inbox(cwd)
         if inbox:
             nxt = 'the next staging or review' if self.mode == 'auto' else 'the next debrief'
@@ -809,6 +881,22 @@ def apprentice_owning(path):
     return None
 
 
+def cmd_lint(args):
+    """ Report pages over budget, missing digests and overlong lessons """
+    a = Apprentice.get(args[0])
+    problems = a.lint()
+    print('\n'.join(problems) if problems else 'Clean: every page is within budget and has a digest.')
+    print(f'Wiki size: {a.wiki_size() // 1000} KB in {len(a.wiki_pages())} pages.')
+
+
+def cmd_reflected(args):
+    """ Record that a reflection just finished, so growth since then can be tracked """
+    a = Apprentice.get(args[0])
+    a.state.mkdir(parents=True, exist_ok=True)
+    write_json(a.reflected_file, dict(date=str(datetime.date.today()), size=a.wiki_size()))
+    print(f'Recorded: wiki is {a.wiki_size() // 1000} KB.')
+
+
 def cmd_scan(args):
     """ Scan an apprentice's whole folder (or given files); exit 1 if anything is found """
     a = Apprentice.get(args[0])
@@ -1039,6 +1127,8 @@ COMMANDS = {
     'condense': cmd_condense,
     'paths': cmd_paths,
     'scan': cmd_scan,
+    'lint': cmd_lint,
+    'reflected': cmd_reflected,
     'start': cmd_start,
     'alias': cmd_alias,
     'unalias': cmd_unalias,

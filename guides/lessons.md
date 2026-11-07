@@ -42,6 +42,15 @@ When unsure, drop it. The next session will bring it back if it matters, and a s
 
 Never extract credentials (keys, tokens, passwords). If the session involved one, the lesson is at most *where it lives*, never the value. Also drop anything the wiki already says. Before adding, search the wiki (`grep -ril <keyword> <folder>`), and update the existing lesson rather than writing a near-duplicate. If a lesson's reason isn't clear from the session, ask rather than inventing one.
 
+## Keep it small
+
+The wiki is read in every session, so its size is a cost paid every time. Bloat comes mostly from additions to lessons that already exist, not from new ones.
+
+- **Prefer sharpening to adding.** If a candidate refines an existing lesson, rewrite that lesson in place at about the same length (and its digest line). Never stage or file an "append: …" that tacks a new point, *Why:* and date onto an existing bullet; if the point is really new, it's a new bullet.
+- **Short lessons.** Under ~400 characters, one short *Why:* (a reason, or the mentor's words in one quote). Leave out the story of how it came up.
+- **One digest line per lesson** (see "The Rules digest" in `WIKI.md`): the rule alone, at most ~150 characters.
+- **Over budget means trim first.** If a target page is over its budget (`$H lint NAME`), adding to it comes with a proposed trim or split of that page, so it doesn't grow further.
+
 ## Decide where each lesson goes
 
 Follow the layout in `WIKI.md`. In brief:

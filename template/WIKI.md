@@ -27,7 +27,7 @@ Folders are created as needed. Don't create a new top-level folder unless no exi
 
 ## Pages
 
-A page covers one **topic**, not one fact. Prefer adding a bullet to an existing page over creating a new one. Split a page when it passes about 150 lines, or when it covers two things you'd look up separately.
+A page covers one **topic**, not one fact. Prefer adding a bullet to an existing page over creating a new one. Keep each page under about **20 KB**; split it when it passes that, or when it covers two things you'd look up separately. `$H lint NAME` reports pages over budget.
 
 - Filenames are lowercase-kebab-case (`writing-style.md`); the title is the first `#` heading.
 - Frontmatter is optional except on project pages:
@@ -41,6 +41,25 @@ A page covers one **topic**, not one fact. Prefer adding a bullet to an existing
 
 - Prose is never hard-wrapped. One paragraph or bullet per line.
 
+### The Rules digest
+
+Pages are read in two steps, so that a session can see everything a page says without reading all of it. Every page with three or more lessons starts (after its title and an optional one-line intro) with a `## Rules` section: one line per lesson, the rule alone in at most ~150 characters, ending with the section that holds the full lesson.
+
+```markdown
+# Coding style
+
+## Rules
+- One keyword per API concept; rare options go in a helper object → Interfaces
+- Never switch behavior by detecting a parameter name → Failing loudly
+
+## Interfaces
+- In a user-facing API, give each concept one keyword ... *Why:* ... (2026-11-07, myproject)
+```
+
+- Every lesson has exactly one digest line, and the two are edited together.
+- Activation loads the digest of the current project's page (and of any `projects/<name>-<topic>.md` pages beside it), not the whole page. When consulting any page, read its digest first, then only the sections whose rules apply.
+- A big project can spread over several pages named `projects/<name>-<topic>.md` (e.g. `starsim-performance.md`); only the main page needs the `repo:` frontmatter.
+
 ## Lessons
 
 Most content consists of **lessons**: bullets that tell the apprentice what to do, with the reason and where it came from.
@@ -52,7 +71,8 @@ Most content consists of **lessons**: bullets that tell the apprentice what to d
 - **Rule first**, stated so it can be acted on.
 - ***Why:*** always include it for preferences and corrections. If it's unknown, write `*Why:* unknown — ask` rather than guessing.
 - **Provenance** in parentheses: the date learned and the project or context. Add the session ID only when the source conversation is likely to be worth revisiting.
-- When a lesson changes, edit it in place and update the date. Don't leave the old version beside the new one. If the history matters, add "(was: …)".
+- **Short:** aim for under ~400 characters and stay under 600. The *Why:* is one short reason or quote, not the story of the session.
+- When a lesson changes, **rewrite it in place**, about as long as before, and update the date (and its digest line). Don't leave the old version beside the new one. If the history matters, add "(was: …)". Never append a new point to an existing bullet with its own *Why:* and date: a new point is a new bullet with its own digest line. Appended sub-lessons are how pages bloat.
 - Group bullets under `##` headings within a page (e.g. `## Plots`, `## Docstrings` on `coding-style.md`).
 
 Facts that aren't rules (a person's role, how a system is wired, a deadline) can be written as ordinary prose or bullets, still with provenance.
@@ -65,7 +85,7 @@ Facts that aren't rules (a person's role, how a system is wired, a deadline) can
 
 ## Home.md
 
-`Home.md` is the index and is loaded into every activated session, so keep it short (under ~60 lines). It has one section per top-level folder, with one line per page: `- [[preferences/coding-style]]: style rules for Python, plots, docstrings`. Every page must be listed. Pages missing from Home.md are effectively invisible.
+`Home.md` is the index and is loaded into every activated session, so keep it short (under ~60 lines, one line per page naming its topics, not its lessons). It has one section per top-level folder, with one line per page: `- [[preferences/coding-style]]: style rules for Python, plots, docstrings`. Every page must be listed. Pages missing from Home.md are effectively invisible.
 
 ## Project pages
 

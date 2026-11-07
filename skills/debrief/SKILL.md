@@ -29,7 +29,7 @@ First, check the backlog: run `$H pending NAME` (ignore the current session if i
 
 If nothing is pending, skip the question and debrief the current session.
 
-- **Current session:** use your own context. If the session was compacted, the summary plus what remains is enough.
+- **Current session:** use your own context. If the session was compacted, read the whole session with `$H condense <this session's ID>` rather than relying on the summary: compaction drops the corrections that matter most.
 - **Inbox:** run `$H inbox NAME`. Any files it lists are notes Claude Code's built-in auto memory saved for this project, and they haven't been folded into the wiki yet. Read them and treat each one as a candidate lesson. They get the same filtering as everything else (step 2): auto memory saves liberally, and many entries won't pass. Mark the ones you drop as absorbed as well.
 - **Backlog / specific session:** run `$H condense <session_id>` on each for a compact dialogue. For more than ~3 sessions, hand each condensed transcript to a subagent in parallel, along with the lessons guide's path (step 2). Have the subagents return candidate lessons only, and do all the filing yourself so deduplication stays consistent. Lessons from a backlog session belong to *that session's* project (its `cwd`).
 
@@ -59,7 +59,7 @@ If the guard hook asks the mentor to confirm a write, don't try to get around it
 
 Present proposals as a single numbered list, one line each: the lesson, the target page, and whether it's new or an update. The mentor can then answer in shorthand ("1, 3, 4; drop 2; 5 is wrong, it's actually…"). After the list, add at most three **questions for <mentor's name>**. These are things you noticed but couldn't interpret, e.g. "You rewrote my plot legend both times. Is that a general rule or specific to those figures?"
 
-Write in the lesson format from `WIKI.md`: rule first, then *Why:*, then provenance.
+Write in the lesson format from `WIKI.md`: rule first, then *Why:*, then provenance, with its line in the page's `## Rules` digest. Follow "Keep it small" in the lessons guide: rewrite rather than append, and if a target page is over budget (`$H lint NAME`), propose a trim of it too.
 
 ## 5. Close out
 
